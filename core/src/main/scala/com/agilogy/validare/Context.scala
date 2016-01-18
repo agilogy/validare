@@ -1,6 +1,7 @@
-package com.agilogy.validare.incontext
+package com.agilogy.validare
 
-import com.agilogy.validare.incontext.Context.{ContextImpl, Part}
+import com.agilogy.validare.Context.{ContextImpl, Part}
+
 
 trait Context {
 
@@ -22,6 +23,8 @@ object Context {
 
     override val parts: Seq[Part] = Seq(Part(""))
   }
+
+  val __ = Self
 
   private case class ContextImpl(parts: Seq[Part]) extends Context {
     def /(ctx: Context): Context = ctx match {
