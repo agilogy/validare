@@ -12,24 +12,62 @@ import com.agilogy.validare.standalone._
 
 import scala.language.implicitConversions
 
-object Options extends Enumeration{
-  val string = Value
-  val number = Value
-  val date = Value
+trait Named[T]{
+  def name(v:T):String
 }
+
+object Named{
+  import scala.language.reflectiveCalls
+//  implicit def structurallyNamed[T<:{val name:String}](v:T):Named[T] = new Named[T] {
+//    override def name(v: T): String = v.name
+//  }
+  def apply[T](nameFunction: T => String):Named[T] = new Named[T] {
+    override def name(v: T): String = nameFunction(v)
+  }
+  implicit class NamedOps[T:Named](v:T){
+    def name:String = implicitly[Named[T]].name(v)
+  }
+}
+import Named._
+
+sealed trait Options{
+  val name:String
+  override def toString: String = name
+}
+object Options{
+  abstract class BaseOptions(val name:String) extends Options
+  case object string extends BaseOptions("string")
+  case object number extends BaseOptions("number")
+  case object date extends BaseOptions("date")
+  val values = Seq[Options](string,number,date)
+  implicit val namedOptions: Named[Options] = Named[Options](_.name)
+}
+
+//object Options extends Enumeration{
+//  val string = Value
+//  val number = Value
+//  val date = Value
+//}
 
 class ExampleTest extends FunSpec {
 
   module =>
 
-  def parseEnum[T<:Enumeration](e:T): String => Validated[T#Value] = {
-    s =>
-      try {
-        Valid(e.withName(s))
-      }catch {
-        case n:NoSuchElementException => illegal(itShould(s"be a valid value", "validValues" -> e.values))
-      }
+
+  def parseAdt[T:Named](values:Seq[T]): String => Validated[T] = {
+    v =>
+      val value = values.find(_.name == v)
+      value.fold[Validated[T]](illegal(itShould(s"be a valid value", "validValues" -> values.map(_.name).mkString(","))))(Valid.apply)
   }
+
+//  def parseEnum[T<:Enumeration](e:T): String => Validated[T#Value] = {
+//    s =>
+//      try {
+//        Valid(e.withName(s))
+//      }catch {
+//        case n:NoSuchElementException => illegal(itShould(s"be a valid value", "validValues" -> e.values.map(_.toString).mkString(",")))
+//      }
+//  }
 
   def foreach[I,O](f:I=>Validated[O]):Seq[I] => Validated[Seq[O]] = {
     is =>
@@ -61,7 +99,7 @@ class ExampleTest extends FunSpec {
       }
   }
 
-  def check[I](f: I => Validity): I => Validated[I] = i => f(i).fold(inv => Invalid(i,inv),Valid(i))
+  def check[I](f: I => Validity): I => Validated[I] = i => f(i).fold[Validated[I]](inv => Invalid(i,inv),Valid(i))
 
   implicit class Reader[I, O](f: I => Validated[O]) {
     def &&(f2: O => Validity):I => Validated[O] = i => f(i).flatMap(check(f2))
@@ -71,7 +109,7 @@ class ExampleTest extends FunSpec {
 
   def greaterOrEqualThan(min: Int)(v: Int): Validity = {
     if (v >= min) Validity.Valid
-    else Validity.Invalid(itShould("be greater or equal than", "value" -> v))
+    else Validity.Invalid(itShould("be greater or equal than", "value" -> v.toString))
   }
 
   val parseInt: String => Validated[Int] = {
@@ -83,7 +121,10 @@ class ExampleTest extends FunSpec {
       }
   }
 
-  implicit def someReader[I,O](f:I => Validated[O]):Some[I] => Validated[Some[O]] = s => f(s.get).map(Some.apply)
+  implicit def someReader[I,O](f:I => Validated[O]):Some[I] => Validated[Some[O]] = {
+    case Some(v) =>
+      f(v).map(Some.apply)
+  }
 
   def parseDate(pattern: String)(s: String): Validated[Date] = {
     val pos = new ParsePosition(0)
@@ -116,8 +157,6 @@ class ExampleTest extends FunSpec {
 
   def parse2[I1,O1,I2,O2](p1: (Context,I1 => Validated[O1]), p2: (Context, I2 => Validated[O2])): Parse2[I1,O1,I2,O2] = Parse2(p1,p2)
   def parse3[I1,O1,I2,O2,I3,O3](p1: (Context,I1 => Validated[O1]), p2: (Context, I2 => Validated[O2]), p3: (Context, I3 => Validated[O3])): Parse3[I1,O1,I2,O2,I3,O3] = Parse3(p1,p2,p3)
-
-
 
   def sampleMethod(sNumber: String, sDate1: String, sDate2: String): Validated[(Int, Date, Date)] = {
 
@@ -157,8 +196,9 @@ class ExampleTest extends FunSpec {
 //    }
 //  }
 
-  def sampleMethod3(opts:Seq[String]): Validated[Seq[Options.Value]] = {
-    val validateOptions = foreach(parseEnum(Options)) combine nonEmpty
+  def sampleMethod3(opts:Seq[String]): Validated[Seq[Options]] = {
+    val parseOptions = parseAdt(Options.values)
+    val validateOptions = foreach(parseOptions) combine nonEmpty
     validateOptions(opts)
   }
 

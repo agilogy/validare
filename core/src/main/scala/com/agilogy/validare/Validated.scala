@@ -8,9 +8,9 @@ sealed trait Validated[+R] extends Product with Serializable {
     v2.fold({
       i2 =>
         this match {
-          case (Valid(v)) => Invalid(v, i2)
-          case (Invalid(v, i1)) => Invalid(v, i1 && i2)
-          case (Illegal(i1)) => Illegal(i1 && i2)
+          case Valid(v) => Invalid(v, i2)
+          case Invalid(v, i1) => Invalid(v, i1 && i2)
+          case Illegal(i1) => Illegal(i1 && i2)
         }
     }, this)
   }
@@ -33,7 +33,7 @@ sealed trait Validated[+R] extends Product with Serializable {
 
   def exists(p: R => Boolean): Boolean = fold(_ => false, p)
 
-  def toEither: Either[Validity.Invalid, R] = fold(Left.apply, Right.apply)
+  def toEither: Either[Validity.Invalid, R] = fold[Either[Validity.Invalid,R]](Left.apply[Validity.Invalid,R], Right.apply[Validity.Invalid,R])
 
   def toOption: Option[R] = fold(_ => None, Some.apply)
 
@@ -50,17 +50,17 @@ sealed trait Validated[+R] extends Product with Serializable {
   def at(ctx:Context):Validated[R]
 }
 
-case class Valid[+R](value: R) extends Validated[R] {
+final case class Valid[+R](value: R) extends Validated[R] {
   val validity = Validity.Valid
 
   override def at(ctx: Context): Valid[R] = this
 }
 
-case class Invalid[+R](value: R, validity: Validity.Invalid) extends Validated[R] {
+final case class Invalid[+R](value: R, validity: Validity.Invalid) extends Validated[R] {
   override def at(ctx: Context): Invalid[R] = Invalid(value,validity.at(ctx))
 }
 
-case class Illegal(validity: Validity.Invalid) extends Validated[Nothing] {
+final case class Illegal(validity: Validity.Invalid) extends Validated[Nothing] {
   override def at(ctx: Context): Illegal = Illegal(validity.at(ctx))
 }
 

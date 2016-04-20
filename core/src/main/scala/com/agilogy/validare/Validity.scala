@@ -22,7 +22,10 @@ sealed trait Validity {
 
 object Validity {
 
-  case class ValidationFailure(message: String, args: Map[String, Any])
+  // WartRemover incorrectly fails with Inferred type containing Any
+  // See https://github.com/puffnfresh/wartremover/issues/153
+  //  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
+  final case class ValidationFailure(message: String, args: Map[String, String])
 
   case object Valid extends Validity {
     override def &&(v2: Validity): Validity = v2
@@ -31,7 +34,7 @@ object Validity {
     override def at(ctx: Context): Valid.type = this
   }
 
-  case class Invalid(issues: Map[Context, Seq[ValidationFailure]]) extends Validity {
+  final case class Invalid(issues: Map[Context, Seq[ValidationFailure]]) extends Validity {
     override def &&(v2: Validity): Invalid = v2 match {
       case Valid => this
       case Invalid(issues2) =>
@@ -44,7 +47,7 @@ object Validity {
     }
 
     override def ||(v2: => Validity): Validity = v2
-    def apply(ctx:Context): Seq[ValidationFailure] = issues.getOrElse(ctx,Seq.empty)
+    def apply(ctx:Context): Seq[ValidationFailure] = issues.getOrElse(ctx,Seq.empty[ValidationFailure])
 
     override def at(ctx: Context): Invalid = Invalid(issues.map{ case (k,v) => (ctx / k) -> v})
   }
@@ -54,5 +57,5 @@ object Validity {
   }
 
 
-  def itShould(msg:String, args:(String,Any)*):ValidationFailure = ValidationFailure(msg, args.toMap)
+  def itShould(msg:String, args:(String,String)*):ValidationFailure = ValidationFailure(msg, args.toMap)
 }

@@ -15,7 +15,7 @@ class ValidityTest extends FunSpec {
     }
 
     it("should build an Invalid with parameters"){
-      assert(itShould("foo", "bar" -> 42, "zoo" -> "woa") === ValidationFailure("foo", Map("bar" -> 42, "zoo" -> "woa")))
+      assert(itShould("foo", "bar" -> "42", "zoo" -> "woa") === ValidationFailure("foo", Map("bar" -> "42", "zoo" -> "woa")))
     }
 
   }

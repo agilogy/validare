@@ -18,17 +18,17 @@ trait Validare{
   def illegal(v0:(Context,ValidationFailure), vs:(Context,ValidationFailure) *): Illegal = {
     Illegal(vs.map(toValidity).fold(toValidity(v0))(_ && _))
   }
-  def itShould(msg:String, args:(String,Any)*):ValidationFailure = Validity.itShould(msg,args :_*)
+  def itShould(msg:String, args:(String,String)*):ValidationFailure = Validity.itShould(msg,args :_*)
 
   def map2[V1, V2, VM](validated1: Validated[V1], validated2: Validated[V2])(f: (V1, V2) => VM): Validated[VM] = {
     (validated1, validated2) match {
       case (Valid(v1), Valid(v2)) => Valid(f(v1, v2))
       case (Valid(v1), Invalid(v2, errs2)) => Invalid(f(v1, v2), errs2)
-      case (Valid(v1), i2@Illegal(errs2)) => i2
+      case (Valid(v1), i2@Illegal(_)) => i2
       case (Invalid(v1, errs1), Valid(v2)) => Invalid(f(v1, v2), errs1)
       case (Invalid(v1, errs1), Invalid(v2, errs2)) => Invalid(f(v1, v2), errs1 && errs2)
       case (Invalid(v1, errs1), Illegal(errs2)) => Illegal(errs1 && errs2)
-      case (i1@Illegal(errs1), Valid(v2)) => i1
+      case (i1@Illegal(_), Valid(_)) => i1
       case (Illegal(errs1), Invalid(v2, errs2)) => Illegal(errs1 && errs2)
       case (Illegal(errs1), Illegal(errs2)) => Illegal(errs1 && errs2)
     }

@@ -3,7 +3,7 @@ package com.agilogy.validare
 import com.agilogy.validare.Context.{ContextImpl, Part}
 
 
-trait Context {
+sealed trait Context {
 
   val parts:Seq[Part]
 
@@ -26,7 +26,8 @@ object Context {
 
   val __ = Self
 
-  private case class ContextImpl(parts: Seq[Part]) extends Context {
+  private final case class ContextImpl(parts: Seq[Part]) extends Context {
+
     def /(ctx: Context): Context = ctx match {
       case Self => this
       case ContextImpl(ctxParts) => ContextImpl(parts ++ ctxParts)

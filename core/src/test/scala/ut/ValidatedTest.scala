@@ -11,8 +11,8 @@ class ValidatedTest extends FunSpec {
   val beANumberMsg: String = "be a number"
   val notANumber = itShould(beANumberMsg)
   val empty = itShould("not be empty")
-  val notSmallerThan10 = itShould("be smaller than", "max" -> 10)
-  val notDivisibleBy3 = itShould("be divisible", "by" -> 3)
+  val notSmallerThan10 = itShould("be smaller than", "max" -> "10")
+  val notDivisibleBy3 = itShould("be divisible", "by" -> "3")
   val validFive: Validated[Int] = valid(5)
   val invalidFour: Validated[Int] = invalid(4, notOdd)
   val illegalInt: Validated[Int] = illegal(notANumber)
@@ -56,6 +56,7 @@ class ValidatedTest extends FunSpec {
 
     it("should execute side effects for Valid values only") {
       val sb = new StringBuffer()
+      @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.NonUnitStatements"))
       val log = { s: Int => sb.append(s); () }
       invalidFour.foreach(log)
       assert(sb.toString === "")
@@ -70,15 +71,15 @@ class ValidatedTest extends FunSpec {
   describe("orElse") {
 
     it("should keep Valid values unchanged") {
-      assert(validFive.orElse(Valid("bar")) === validFive)
+      assert(validFive.orElse(Valid(23)) === validFive)
     }
 
     it("should use the default value for invalid values") {
-      assert(invalidFour.orElse(Valid("bar")) === Valid("bar"))
+      assert(invalidFour.orElse(Valid(23)) === Valid(23))
     }
 
     it("should use the default value for illegal values") {
-      assert(illegalInt.orElse(Valid("bar")) === Valid("bar"))
+      assert(illegalInt.orElse(Valid(23)) === Valid(23))
     }
 
   }
@@ -102,6 +103,7 @@ class ValidatedTest extends FunSpec {
   describe("exists") {
 
 
+    @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.NonUnitStatements"))
     def f(sb: StringBuffer): (Int => Boolean) = {
       s =>
         sb.append("invoked!")
