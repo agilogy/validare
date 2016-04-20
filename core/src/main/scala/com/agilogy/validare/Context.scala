@@ -12,6 +12,8 @@ trait Context {
   def /(ctx: Context): Context
 
   def /(path: String): Context = this / Context(path)
+
+  override def toString: String = parts.mkString("","/","")
 }
 
 object Context {
@@ -19,9 +21,7 @@ object Context {
   object Self extends Context {
     override def /(ctx: Context): Context = ctx
 
-    override def toString: String = "."
-
-    override val parts: Seq[Part] = Seq(Part(""))
+    override val parts: Seq[Part] = Seq(Context.Part("."))
   }
 
   val __ = Self
@@ -32,7 +32,6 @@ object Context {
       case ContextImpl(ctxParts) => ContextImpl(parts ++ ctxParts)
     }
 
-    override def toString: String = parts.mkString("","/","")
   }
 
   final case class Part(name:String,index:Int *){
@@ -41,8 +40,8 @@ object Context {
   }
 
   def apply(part: String): Context = {
-    require(!part.isEmpty)
-    ContextImpl(Seq(Part(part)))
+    if(part.isEmpty) Context.Self
+    else ContextImpl(Seq(Part(part)))
   }
 
 }
