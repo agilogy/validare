@@ -22,9 +22,6 @@ sealed trait Validity {
 
 object Validity {
 
-  // WartRemover incorrectly fails with Inferred type containing Any
-  // See https://github.com/puffnfresh/wartremover/issues/153
-  //  @SuppressWarnings(Array("org.brianmckenna.wartremover.warts.Any"))
   final case class ValidationFailure(message: String, args: Map[String, String])
 
   case object Valid extends Validity {

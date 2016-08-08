@@ -112,15 +112,17 @@ class ValidatedTest extends FunSpec {
 
     it("should check if the value matches the predicate for valid values") {
       val sb = new StringBuffer()
-      assert(validFive.exists(f(sb)) === true)
-      assert(valid(7).exists(f(sb)) === false)
+      val cond = f(sb)
+      assert(validFive.exists(cond) === true)
+      assert(valid(7).exists(cond) === false)
       assert(sb.toString === "invoked!invoked!")
     }
 
     it("should return false directly for invalid or illegal values") {
       val sb = new StringBuffer()
-      assert(invalidFour.exists(f(sb)) === false)
-      assert(illegalInt.exists(f(sb)) === false)
+      val cond = f(sb)
+      assert(invalidFour.exists(cond) === false)
+      assert(illegalInt.exists(cond) === false)
       assert(sb.toString === "")
     }
 
@@ -154,33 +156,33 @@ class ValidatedTest extends FunSpec {
 
   describe("combine") {
 
-    val f: (Int, Int) => Int = _ - _
+    val substraction: (Int, Int) => Int = _ - _
 
     it("should return illegal whenever we have an illegal value, while accumulating errors") {
 
-      assert(validFive.combine(illegalInt)(f) === illegalInt)
-      assert(illegalInt.combine(validFive)(f) === illegalInt)
+      assert(validFive.combine(illegalInt)(substraction) === illegalInt)
+      assert(illegalInt.combine(validFive)(substraction) === illegalInt)
 
-      assert(invalidFour.at("a").combine(illegalInt.at("b"))(f) === illegal(__ / "a" -> notOdd, __ / "b" -> notANumber))
-      assert(illegalInt.at("a").combine(invalidFour.at("b"))(f) === illegal(__ / "a" -> notANumber, __ / "b" -> notOdd))
+      assert(invalidFour.at("a").combine(illegalInt.at("b"))(substraction) === illegal(__ / "a" -> notOdd, __ / "b" -> notANumber))
+      assert(illegalInt.at("a").combine(invalidFour.at("b"))(substraction) === illegal(__ / "a" -> notANumber, __ / "b" -> notOdd))
 
-      assert(illegal(empty).at("a").combine(illegalInt.at("b"))(f) === illegal(__ / "a" -> empty, __ / "b" -> notANumber))
-      assert(illegalInt.at("a").combine(illegal(empty).at("b"))(f) === illegal(__ / "a" -> notANumber, __ / "b" -> empty))
+      assert(illegal(empty).at("a").combine(illegalInt.at("b"))(substraction) === illegal(__ / "a" -> empty, __ / "b" -> notANumber))
+      assert(illegalInt.at("a").combine(illegal(empty).at("b"))(substraction) === illegal(__ / "a" -> notANumber, __ / "b" -> empty))
     }
 
     it("should return invalid whenever we have some invalid value and no illegal value, while accumulating errors") {
       val invalid13 = invalid(13, notDivisibleBy3, notSmallerThan10)
-      assert(validFive.at("a").combine(invalid13.at("b"))(f) === invalid(5-13, __ / "b" -> notDivisibleBy3, __  / "b" -> notSmallerThan10))
-      assert(invalid13.at("a").combine(validFive.at("b"))(f) === invalid(13-5, __ / "a" -> notDivisibleBy3, __ / "a" -> notSmallerThan10))
+      assert(validFive.at("a").combine(invalid13.at("b"))(substraction) === invalid(5-13, __ / "b" -> notDivisibleBy3, __  / "b" -> notSmallerThan10))
+      assert(invalid13.at("b").combine(validFive.at("a"))(substraction) === invalid(13-5, __ / "b" -> notDivisibleBy3, __ / "b" -> notSmallerThan10))
 
-      assert(invalidFour.at("a").combine(invalid13.at("b"))(f) === invalid(4 - 13, __ / "a" -> notOdd, __ / "b" -> notDivisibleBy3, __ / "b" -> notSmallerThan10))
-      assert(invalid13.at("a").combine(invalidFour.at("b"))(f) === invalid(13 - 4, __ / "a" -> notDivisibleBy3, __ / "a" -> notSmallerThan10,  __ / "b" -> notOdd))
+      assert(invalidFour.at("a").combine(invalid13.at("b"))(substraction) === invalid(4 - 13, __ / "a" -> notOdd, __ / "b" -> notDivisibleBy3, __ / "b" -> notSmallerThan10))
+      assert(invalid13.at("b").combine(invalidFour.at("a"))(substraction) === invalid(13 - 4,  __ / "a" -> notOdd, __ / "b" -> notDivisibleBy3, __ / "b" -> notSmallerThan10))
     }
 
     it("should return valid only if both validations are valid") {
       val validThree = Valid(3)
-      assert(validFive.combine(validThree)(f) === Valid(5-3))
-      assert(validThree.combine(validFive)(f) === Valid(3-5))
+      assert(validFive.combine(validThree)(substraction) === Valid(5-3))
+      assert(validThree.combine(validFive)(substraction) === Valid(3-5))
     }
 
   }
@@ -201,6 +203,11 @@ class ValidatedTest extends FunSpec {
 
     it("should apply the function to invalid values and accumulate errors") {
       assert(invalidFour.flatMap(validF) === invalid(4-2, notOdd))
+      // TODO: Is this really interesting?
+      // This is the reason I created an Invalid type, where we have errors, but we still have a value?
+      // Do we really want to continue using the value??
+      // e.g. 4+1 may not be interesting, but the first problem is 4 is not odd. Maybe, 4+1 not being interesting is not important at all
+      // Or maybe it is
       assert(invalidFour.flatMap(invalidF) === invalid(4+1, notOdd, notInteresting))
       assert(invalidFour.flatMap(illegalF) === illegal(notOdd, wrongType))
     }
