@@ -37,13 +37,4 @@ object Validare extends BaseBuild {
       )
     )
 
-  lazy val reader = project.in(file("reader"))
-    .settings(moduleName := "validare-reader")
-    .settings(version := "0.1-SNAPSHOT")
-    .settings(commonSettings)
-    .settings(
-      libraryDependencies ++= Seq(
-        "org.scalatest" %% "scalatest" % "2.2.4" % "test"
-      )
-    )
 }
