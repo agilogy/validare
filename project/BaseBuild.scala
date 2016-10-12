@@ -74,11 +74,11 @@ trait BaseBuild extends Build{
 //  )
 
   lazy val baseSettings = Seq(
+    resolvers += Resolver.url("Agilogy Scala",url("http://dl.bintray.com/agilogy/scala/"))(Resolver.ivyStylePatterns),
     scalacOptions ++= commonScalacOptions(scalaVersion.value),
-    libraryDependencies ++= Seq(
-    ),
+    libraryDependencies ++= Seq(),
     testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oDF"),
-    wartremoverErrors ++= Warts.allBut(Wart.DefaultArguments, Wart.Nothing)
+    wartremoverErrors ++= Warts.allBut(Wart.DefaultArguments, Wart.Nothing, Wart.Overloading, Wart.LeakingSealed, Wart.NoNeedForMonad, Wart.Equals)
 
   ) //++ versionSpecificScalacOptions
 

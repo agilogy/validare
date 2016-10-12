@@ -2,13 +2,13 @@ package examples
 
 import java.text.{ParsePosition, SimpleDateFormat}
 import java.util
-import java.util.{GregorianCalendar, Date}
+import java.util.{Date, GregorianCalendar}
 
-import com.agilogy.classis.{ApplicativeSyntax, Applicative}
+import com.agilogy.classis.{Applicative, ApplicativeSyntax}
+import com.agilogy.path.Path$
 import com.agilogy.validare._
 import com.agilogy.validare.Validity.ValidationFailure
 import org.scalatest.FunSpec
-
 import com.agilogy.validare.standalone._
 
 import scala.language.implicitConversions
@@ -66,10 +66,10 @@ class ExampleTest extends FunSpec {
     def flatMap[I2,O2](f2: O => Reader[I2,O2]): (I, I2) => Validated[(O, O2)] = flatMap2(f,f2)
     //TODO: Better name and tests. Is it useful at all?
     def tupledFlatMap[I2,O2](f2: O => Reader[I2,O2]): Reader[(I, I2),(O, O2)] = flatMap2(fr,f2).tupled
-    def at(ctx:Context):Reader[I,O] = {
+    def at(ctx:Path):Reader[I,O] = {
       v => f(v).at(ctx)
     }
-    def at(ctx:String):Reader[I,O] = at(Context.Self / ctx)
+    def at(ctx:String):Reader[I,O] = at(Path.Self / ctx)
   }
 
 
@@ -82,7 +82,7 @@ class ExampleTest extends FunSpec {
   def foreach[I,O](f:Reader[I,O]): Reader[Seq[I],Seq[O]] = {
     is =>
       is.zipWithIndex.foldLeft[Validated[Seq[O]]](Valid(Seq.empty)){
-        case (acc, (i,idx)) => acc.combine(f(i).at(Context.Self / idx))(_ :+ _)
+        case (acc, (i,idx)) => acc.combine(f(i).at(Path.Self / idx))(_ :+ _)
       }
   }
 
@@ -328,7 +328,7 @@ class ExampleTest extends FunSpec {
       val validity = res.validity
       val failures = validity.fold(identity, fail("unexepcted success")).issues
       assert(failures.size === 1)
-      val sDate1Failures = failures(Context.Self / "sDate1")
+      val sDate1Failures = failures(Path.Self / "sDate1")
       assert(sDate1Failures.size === 1)
       val sDate1Failure = sDate1Failures.head
       assert(sDate1Failure === ValidationFailure("be a date", Map("pattern" -> pattern)))

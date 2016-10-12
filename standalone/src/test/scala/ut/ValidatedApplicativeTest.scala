@@ -1,10 +1,10 @@
 package ut
 
-import com.agilogy.validare.{Context, Valid, Validated}
+import com.agilogy.validare.{Valid, Validated}
 import org.scalatest.FunSpec
 import com.agilogy.validare._
 import com.agilogy.validare.standalone._
-import Context.__
+import com.agilogy.path.Path.__
 
 class ValidatedApplicativeTest extends FunSpec{
 

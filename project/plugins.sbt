@@ -15,4 +15,4 @@ resolvers += Resolver.url(
 
 addSbtPlugin("me.lessis" % "bintray-sbt" % "0.3.0")
 
-addSbtPlugin("org.brianmckenna" % "sbt-wartremover" % "0.15-SNAPSHOT")
+addSbtPlugin("org.wartremover" % "sbt-wartremover" % "1.1.1")
