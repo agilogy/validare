@@ -1,6 +1,6 @@
 package com.agilogy.validare.utils
 
-trait HasLength[T] {
+trait HasLength[-T] {
   def length(value: T): Int
 }
 

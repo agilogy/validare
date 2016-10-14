@@ -2,6 +2,10 @@ package com.agilogy.validare.validation
 
 import Validity._
 import PredicatesBooleanAlgebra._
+import com.agilogy.validare.utils.Indexable
+import com.agilogy.validare.validation.Predicate.False
+
+import scala.language.higherKinds
 
 sealed trait Predicate[-I] extends Product with Serializable {
 
@@ -79,11 +83,14 @@ final case class FieldPredicate[I, FT](name: String, field: I => FT, verificatio
   override def opposite: Predicate[I] = this.copy(verification = !verification)
 }
 
-//TODO: Convert into a fully usable predicate
-final case class PositionPredicate[I,PT](position:Int, failedVerification:Predicate[PT]) extends Predicate[I] {
-  override def apply(input: I): Validity = Invalid(failedVerification)
+final case class PositionPredicate[S[_]:Indexable,E](position:Int, verification:Predicate[E]) extends Predicate[S[E]] {
 
-  override def opposite: Predicate[I] = this.copy(failedVerification = !failedVerification)
+  val indexable = Indexable[S]
+
+  //TODO: Fix Invalid(False)
+  override def apply(input: S[E]): Validity = indexable.at(input,position).map(verification.apply).getOrElse(Invalid(False))
+
+  override def opposite: Predicate[S[E]] = this.copy(verification = !verification)
 }
 
 trait CollectionPredicate[I] extends Predicate[I] {
