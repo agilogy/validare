@@ -1,5 +1,6 @@
 package ut.validation
 
+import com.agilogy.validare.validation.NotPredicate
 import com.agilogy.validare.validation.predicates.Predicates._
 import com.agilogy.validare.validation.Validity._
 import org.scalatest.FunSpec
@@ -10,6 +11,12 @@ class StringPredicatesTest extends FunSpec {
     val isAsciiAlpha = matches("ascii-alpha", "[a-zA-Z]+".r)
     assert(isAsciiAlpha("abc") === Valid)
     assert(isAsciiAlpha("abc3") === Invalid(isAsciiAlpha))
+  }
+
+  it("should get the opposite of a regex matching predicate") {
+    val isAsciiAlpha = matches("ascii-alpha", "[a-zA-Z]+".r)
+    assert(!isAsciiAlpha === NotPredicate(isAsciiAlpha))
+
   }
 
   it("should validate a string not being blank") {

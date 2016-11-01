@@ -74,10 +74,10 @@ final case class NotPredicate[I](v: AtomicPredicate[I]) extends Predicate[I] {
 }
 
 @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-final case class FieldPredicate[I, FT](name: String, field: I => FT, verification: Predicate[FT]) extends Predicate[I] {
+final case class PropertyPredicate[I, FT](name: String, field: I => FT, verification: Predicate[FT]) extends Predicate[I] {
   override def apply(input: I): Validity = verification.apply(field(input)) match {
     case Validity.Valid => Validity.Valid
-    case i: Validity.Invalid => Validity.Invalid(FieldPredicate[I, FT](name, field, i.failing.asInstanceOf[Predicate[FT]]))
+    case i: Validity.Invalid => Validity.Invalid(PropertyPredicate[I, FT](name, field, i.failing.asInstanceOf[Predicate[FT]]))
   }
 
   override def opposite: Predicate[I] = this.copy(verification = !verification)
@@ -88,7 +88,12 @@ final case class PositionPredicate[S[_]:Indexable,E](position:Int, verification:
   val indexable = Indexable[S]
 
   //TODO: Fix Invalid(False)
-  override def apply(input: S[E]): Validity = indexable.at(input,position).map(verification.apply).getOrElse(Invalid(False))
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
+  override def apply(input: S[E]): Validity = indexable.at(input,position).map(verification.apply) match {
+    case Some(Invalid(p)) => Invalid(PositionPredicate[S,E](position,p.asInstanceOf[Predicate[E]]))
+    case Some(Valid) => Valid
+    case None => Invalid(False)
+  }
 
   override def opposite: Predicate[S[E]] = this.copy(verification = !verification)
 }

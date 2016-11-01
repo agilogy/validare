@@ -53,4 +53,6 @@ trait FoldablePredicates {
     override def opposite: Predicate[T[I]] = forAll(!elementValidation)
   }
 
+  def atPosition[S[_] : Indexable,E](i:Int,p:Predicate[E]):Predicate[S[E]] = PositionPredicate(i,p)
+
 }
