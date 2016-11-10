@@ -10,7 +10,6 @@ import scala.language.higherKinds
 sealed trait Predicate[-I] extends Product with Serializable {
 
   def &&[II <: I](other: Predicate[II]): Predicate[II] = and(this, other)
-//  def and2(other: Predicate[I]): Predicate[I] = and(this, other)
 
   def ||[II <: I](other: Predicate[II]): Predicate[II] = or(this, other)
 
@@ -51,6 +50,8 @@ final case class OrPredicate[I](verifications: Seq[Predicate[I]]) extends Predic
   }
 
   override def opposite: Predicate[I] = verifications.tail.foldLeft[Predicate[I]](!verifications.head)((acc, v) => and(acc, !v))
+
+  override def toString: String = verifications.mkString(" || ")
 }
 
 final case class AndPredicate[I](verifications: Seq[Predicate[I]]) extends Predicate[I] {
@@ -62,6 +63,8 @@ final case class AndPredicate[I](verifications: Seq[Predicate[I]]) extends Predi
   }
 
   override def opposite: Predicate[I] = verifications.tail.foldLeft[Predicate[I]](!verifications.head)((acc, v) => or(acc, !v))
+
+  override def toString: String = verifications.mkString(" && ")
 }
 
 final case class NotPredicate[I](v: AtomicPredicate[I]) extends Predicate[I] {
@@ -71,6 +74,8 @@ final case class NotPredicate[I](v: AtomicPredicate[I]) extends Predicate[I] {
   }
 
   override def opposite: Predicate[I] = v
+
+  override def toString: String = s"!$v"
 }
 
 @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
@@ -83,6 +88,31 @@ final case class PropertyPredicate[I, FT](name: String, field: I => FT, verifica
   override def opposite: Predicate[I] = this.copy(verification = !verification)
 }
 
+
+trait Transformation[T,T2] extends AtomicPredicate[T]{
+  val f: T => Option[T2]
+  override def satisfiedBy(value: T): Boolean = f(value).isDefined
+
+  def apply(other: Predicate[T2]): TransformedPredicate[T, T2] = TransformedPredicate(this,other)
+}
+
+
+final case class TransformedPredicate[T,T2](transformation: Transformation[T,T2], verification:Predicate[T2]) extends Predicate[T]{
+
+  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
+  override def apply(input: T): Validity = transformation.f(input) match {
+    case Some(i2) => verification(i2) match {
+      case Valid => Valid
+      case Invalid(p) => Invalid(TransformedPredicate(transformation,p.asInstanceOf[Predicate[T2]]))
+    }
+    case None => Validity.Invalid(transformation)
+  }
+
+  override def opposite: Predicate[T] = !transformation || TransformedPredicate(transformation, !verification)
+
+}
+
+//TODO: Isn't this a particular case of PropertyPredicate?
 final case class PositionPredicate[S[_]:Indexable,E](position:Int, verification:Predicate[E]) extends Predicate[S[E]] {
 
   val indexable = Indexable[S]
@@ -101,7 +131,7 @@ final case class PositionPredicate[S[_]:Indexable,E](position:Int, verification:
 trait CollectionPredicate[I] extends Predicate[I] {
 }
 
-trait AtomicPredicate[I] extends Predicate[I] {
+trait AtomicPredicate[-I] extends Predicate[I] {
 
   val id: String = this.getClass.getSimpleName
 
