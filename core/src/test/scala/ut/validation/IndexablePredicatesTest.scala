@@ -1,10 +1,9 @@
 package ut.validation
 
-import com.agilogy.validare.validation.Predicate.False
-import com.agilogy.validare.validation.{PositionPredicate, Predicate}
+import com.agilogy.validare.validation.Predicate
 import com.agilogy.validare.validation.Validity.{Invalid, Valid}
-import org.scalatest.FreeSpec
 import com.agilogy.validare.validation.predicates.Predicates._
+import org.scalatest.FreeSpec
 
 class IndexablePredicatesTest extends FreeSpec{
 
@@ -19,7 +18,7 @@ class IndexablePredicatesTest extends FreeSpec{
     "should reduce each value to the failing part" in {
       val p2:Predicate[Seq[String]] = forAll(startsWithA && endsWithA)
       assert(p2(Seq("abc", "foo", "abda")) ===
-        Invalid(PositionPredicate(0, endsWithA) && atPosition(1, startsWithA && endsWithA)))
+        Invalid(atPosition(0, endsWithA) && atPosition(1, startsWithA && endsWithA)))
     }
     "should have an opposite" in {
       assert(!p === exists(!startsWithA))
@@ -29,7 +28,7 @@ class IndexablePredicatesTest extends FreeSpec{
     val p:Predicate[Seq[String]] = exists(startsWithA)
     "should check the values of a traversable" in {
       assert(p(Seq("abc","adr")) === Valid)
-      assert(p(Seq("foo","bar")) === Invalid(PositionPredicate(0,startsWithA) || atPosition(1,startsWithA)))
+      assert(p(Seq("foo","bar")) === Invalid(atPosition(0,startsWithA) || atPosition(1,startsWithA)))
     }
     "should fail when no elements exist at all" in {
       assert(p(Seq.empty) === Invalid(p))
@@ -37,7 +36,7 @@ class IndexablePredicatesTest extends FreeSpec{
     "should reduce each value to the failing part" in {
       val p2:Predicate[Seq[String]] = exists(startsWithA && endsWithA)
       assert(p2(Seq("abc", "foo")) ===
-        Invalid(PositionPredicate(0, endsWithA) || atPosition(1, startsWithA && endsWithA)))
+        Invalid(atPosition(0, endsWithA) || atPosition(1, startsWithA && endsWithA)))
     }
     "should have an opposite" in {
       assert(!p === forAll(!startsWithA))
@@ -48,11 +47,11 @@ class IndexablePredicatesTest extends FreeSpec{
     "should check the value at a particular position" in {
       assert(p(Seq("abc","")) === Valid)
       assert(p(Seq("abc","a")) === Invalid(p))
-      // TODO: Fix this. It should fail at size >= 2
-      assert(p(Seq("abc")) === Invalid(False))
+      assert(p(Seq("abc")) === Invalid(length[Seq[String]].validate(gteq(1)) && atPosition(1,isEmptyS)))
     }
     "should have an opposite" in {
-      assert(p.opposite === atPosition[Seq,String](1,nonEmptyS))
+      //TODO: Try to make length(lt(1)) synonim of isEmpty
+      assert(p.opposite === (length[Seq[String]].validate(lt(1)) || atPosition[Seq,String](1,nonEmptyS)))
     }
   }
 

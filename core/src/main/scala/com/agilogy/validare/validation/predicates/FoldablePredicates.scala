@@ -8,6 +8,7 @@ import com.agilogy.validare.validation._
 import scala.language.{existentials, higherKinds}
 
 trait FoldablePredicates {
+  self:TransformedPredicates =>
 
   case class forAll[E, S[_]: Indexable](elementValidation: Predicate[E]) extends CollectionPredicate[S[E]] {
 
@@ -19,7 +20,7 @@ trait FoldablePredicates {
         case (v, (e, idx)) =>
           val positionValidation = elementValidation(e) match {
             case Valid => Valid
-            case Invalid(p) => Invalid(PositionPredicate[S,E](idx, p.asInstanceOf[Predicate[E]]))
+            case Invalid(p) => Invalid(atPosition[S,E](idx, p.asInstanceOf[Predicate[E]]))
           }
           v && positionValidation
       }
@@ -47,12 +48,12 @@ trait FoldablePredicates {
     @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
     private def validateElement(e: I, idx: Int): Validity = elementValidation(e) match {
       case Valid => Valid
-      case Invalid(p) => Invalid(PositionPredicate[T,I](idx, p.asInstanceOf[Predicate[I]]))
+      case Invalid(p) => Invalid(atPosition[T,I](idx, p.asInstanceOf[Predicate[I]]))
     }
 
     override def opposite: Predicate[T[I]] = forAll(!elementValidation)
   }
 
-  def atPosition[S[_] : Indexable,E](i:Int,p:Predicate[E]):Predicate[S[E]] = PositionPredicate(i,p)
+//  def atPosition[S[_] : Indexable,E](i:Int,p:Predicate[E]):Predicate[S[E]] = PositionPredicate(i,p)
 
 }

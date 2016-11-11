@@ -1,6 +1,6 @@
 package ut.validation
 
-import com.agilogy.validare.validation.NotPredicate
+import com.agilogy.validare.validation.{Property, NotPredicate}
 import com.agilogy.validare.validation.Validity.{Invalid, Valid}
 import org.scalatest.FreeSpec
 import com.agilogy.validare.validation.predicates.Predicates._
@@ -10,7 +10,7 @@ final case class Cat(name:String, age:Int)
 class PropertyPredicateTest extends FreeSpec{
 
   "field predicate" - {
-    val catName = at[Cat]("name",_.name)
+    val catName: Property[Cat, String] = at[Cat]("name",_.name)
     val catNameNotEmpty = catName(nonEmptyS)
 
     "should validate fields" in {
@@ -39,7 +39,7 @@ class PropertyPredicateTest extends FreeSpec{
     val definedGt3 = isDefined[Int](gt(3))
 
     "should compose with further validation" in {
-      assert(definedGt3(None) === Invalid(isDefined[Int]))
+      assert(definedGt3(None) === Invalid(isDefined[Int] && definedGt3))
       //TODO: Not sure. Maybe we should provide information on the transformation applied
       assert(definedGt3(Some(2)) === Invalid(definedGt3))
       assert(isDefined[Int](gt(0) && lt(10))(Some(12)) === Invalid(isDefined[Int](lt(10))))

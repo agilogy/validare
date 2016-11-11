@@ -6,6 +6,7 @@ import com.agilogy.validare.utils.Indexable
 import com.agilogy.validare.validation.Predicate.False
 
 import scala.language.higherKinds
+import scala.reflect.ClassTag
 
 sealed trait Predicate[-I] extends Product with Serializable {
 
@@ -78,14 +79,20 @@ final case class NotPredicate[I](v: AtomicPredicate[I]) extends Predicate[I] {
   override def toString: String = s"!$v"
 }
 
-@SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-final case class PropertyPredicate[I, FT](name: String, field: I => FT, verification: Predicate[FT]) extends Predicate[I] {
-  override def apply(input: I): Validity = verification.apply(field(input)) match {
-    case Validity.Valid => Validity.Valid
-    case i: Validity.Invalid => Validity.Invalid(PropertyPredicate[I, FT](name, field, i.failing.asInstanceOf[Predicate[FT]]))
-  }
+//TODO: This transformation is a tautology (it is always true). Can this be represented in the type level somehow?
+final case class Property[I,FT](name:String, getter: I => FT) extends Transformation[I,FT] {
 
-  override def opposite: Predicate[I] = this.copy(verification = !verification)
+  override val f: (I) => Option[FT] = i => Some(getter(i))
+
+  override def opposite: Predicate[I] = False
+
+  override def toString: String = name
+
+  override def equals(obj: scala.Any): Boolean = obj match {
+    //TODO: Check property obj is of the same type
+    case Property(name,_)  => true
+    case _ => false
+  }
 }
 
 
@@ -93,10 +100,21 @@ trait Transformation[T,T2] extends AtomicPredicate[T]{
   val f: T => Option[T2]
   override def satisfiedBy(value: T): Boolean = f(value).isDefined
 
-  def apply(other: Predicate[T2]): TransformedPredicate[T, T2] = TransformedPredicate(this,other)
+  def apply(other: Predicate[T2]): TransformedPredicate[T, T2] = this.validate(other)
+  def validate(other: Predicate[T2]): TransformedPredicate[T, T2] = TransformedPredicate(this,other)
 }
 
 
+/**
+  * A predicate that validates a value after some transformation that may itself fail
+  * e.g. isDefined transforms an Option[T] into a T and then continues validating T,
+  * but the transformation itself may fail (i.e. when the value is None)
+  * Note that PropertyPredicate is similar but the transformation is assumed to never fail
+  * @param transformation
+  * @param verification
+  * @tparam T The type of the value that will be validated
+  * @tparam T2 The type of the result of the transformation, that will be further validated to validate the input value
+  */
 final case class TransformedPredicate[T,T2](transformation: Transformation[T,T2], verification:Predicate[T2]) extends Predicate[T]{
 
   @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
@@ -105,27 +123,13 @@ final case class TransformedPredicate[T,T2](transformation: Transformation[T,T2]
       case Valid => Valid
       case Invalid(p) => Invalid(TransformedPredicate(transformation,p.asInstanceOf[Predicate[T2]]))
     }
-    case None => Validity.Invalid(transformation)
+    case None =>
+      //Validity.Invalid(transformation)
+      transformation(input) && Invalid(this)
   }
 
   override def opposite: Predicate[T] = !transformation || TransformedPredicate(transformation, !verification)
 
-}
-
-//TODO: Isn't this a particular case of PropertyPredicate?
-final case class PositionPredicate[S[_]:Indexable,E](position:Int, verification:Predicate[E]) extends Predicate[S[E]] {
-
-  val indexable = Indexable[S]
-
-  //TODO: Fix Invalid(False)
-  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-  override def apply(input: S[E]): Validity = indexable.at(input,position).map(verification.apply) match {
-    case Some(Invalid(p)) => Invalid(PositionPredicate[S,E](position,p.asInstanceOf[Predicate[E]]))
-    case Some(Valid) => Valid
-    case None => Invalid(False)
-  }
-
-  override def opposite: Predicate[S[E]] = this.copy(verification = !verification)
 }
 
 trait CollectionPredicate[I] extends Predicate[I] {
@@ -137,7 +141,8 @@ trait AtomicPredicate[-I] extends Predicate[I] {
 
   def satisfiedBy(value: I): Boolean
 
-  override final def apply(input: I): Validity = {
+  //TODO: It was final. Make somehow difficult to override by accident (no idea how to do that, yet)
+  override def apply(input: I): Validity = {
     if (satisfiedBy(input))
       Validity.Valid
     else
