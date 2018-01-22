@@ -5,8 +5,6 @@ import com.agilogy.validare.validation.Validity.{Invalid, Valid}
 import org.scalatest.FreeSpec
 import com.agilogy.validare.validation.predicates.Predicates._
 
-final case class Cat(name:String, age:Int)
-
 class PropertyPredicateTest extends FreeSpec{
 
   "field predicate" - {

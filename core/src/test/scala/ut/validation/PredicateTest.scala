@@ -7,6 +7,7 @@ import org.scalatest.FunSpec
 import com.agilogy.validare.validation.predicates.Predicates._
 
 @SuppressWarnings(Array("org.wartremover.warts.Any"))
+@SuppressWarnings(Array("org.wartremover.warts.Unused"))
 class PredicateTest extends FunSpec {
 
   val startsWithA = startsWith("a")
@@ -110,11 +111,6 @@ class PredicateTest extends FunSpec {
   }
 
   it("should be contravariant") {
-    trait Animal{
-      val name:String
-    }
-    case class Dog(name:String) extends Animal
-    case class Cat(name:String) extends Animal
     val nonEmptyName:Predicate[Animal] = at[Animal]("name",_.name)(nonEmptyS)
     val dogName:Predicate[Dog] = at[Dog]("name",_.name)(endsWith("y"))
     val dogValidation: Predicate[Dog] = nonEmptyName && dogName
@@ -122,8 +118,8 @@ class PredicateTest extends FunSpec {
     assert(dogValidation(Dog("Snoopy")) === Valid)
     assert(dogValidation(Dog("")) === Invalid(nonEmptyName && dogName))
     assert(dogValidation(Dog("Garfield")) === Invalid(dogName))
-    assert(catValidation(Cat("")) === Invalid(nonEmptyName))
-    assert(catValidation(Cat("Garfield")) === Valid)
+    assert(catValidation(Cat("",3)) === Invalid(nonEmptyName))
+    assert(catValidation(Cat("Garfield",3)) === Valid)
 
 
   }

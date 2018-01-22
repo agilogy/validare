@@ -5,9 +5,9 @@ import com.agilogy.validare.validation.{Predicate, Validity}
 sealed trait Validated[T] extends Product with Serializable
 
 object Validated {
-  def apply[T](value: T, validity: Validity): Validated[T] = validity match {
+  def apply[T](value: T, validity: Validity[T]): Validated[T] = validity match {
     case Validity.Valid => Valid(value)
-    case i@Validity.Invalid(_) => Invalid(i)
+    case Validity.Invalid(p) => Invalid(Validity.Invalid(p))
   }
 
   sealed trait Parsed[T] extends Validated[T]
@@ -20,7 +20,7 @@ object Validated {
 
   sealed trait Invalid[T] extends Validated[T]
 
-  final case class FailedPredicate[A](validity: Validity.Invalid) extends Invalid[A]
+  final case class FailedPredicate[A](validity: Validity.Invalid[A]) extends Invalid[A]
 
   //    case class FailedPredicateAfter[A,B](validity:Validity.Invalid[B], after:TransformingValidation[A,B]) extends Invalid[B]
   final case class FailedTransformation[A, B](parser: Parser[A, B]) extends Invalid[B] with Parsed[B]
@@ -31,7 +31,7 @@ object Validated {
 
     def apply[A, B](transformation: AtomicParser[A, B]): FailedTransformation[A, B] = FailedTransformation(transformation)
 
-    def apply[T](validity: Validity.Invalid): FailedPredicate[T] = FailedPredicate(validity)
+    def apply[T](validity: Validity.Invalid[T]): FailedPredicate[T] = FailedPredicate(validity)
 
     def apply[T](p: Predicate[T]): FailedPredicate[T] = FailedPredicate(Validity.Invalid(p))
 

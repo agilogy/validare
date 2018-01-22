@@ -12,15 +12,14 @@ trait FoldablePredicates {
 
   case class forAll[E, S[_]: Indexable](elementValidation: Predicate[E]) extends CollectionPredicate[S[E]] {
 
-    val indexable = implicitly[Indexable[S]]
+    private val indexable = implicitly[Indexable[S]]
 
-    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-    override def apply(input: S[E]): Validity = {
-      indexable.zipWithIndex(input).foldLeft[Validity](Validity.Valid) {
+    override def apply(input: S[E]): Validity[S[E]] = {
+      indexable.zipWithIndex(input).foldLeft[Validity[S[E]]](Validity.Valid) {
         case (v, (e, idx)) =>
           val positionValidation = elementValidation(e) match {
             case Valid => Valid
-            case Invalid(p) => Invalid(atPosition[S,E](idx, p.asInstanceOf[Predicate[E]]))
+            case Invalid(p) => Invalid(atPosition[S,E](idx, p))
           }
           v && positionValidation
       }
@@ -31,24 +30,18 @@ trait FoldablePredicates {
 
   case class exists[I, T[_] : Indexable](elementValidation: Predicate[I]) extends CollectionPredicate[T[I]] {
 
-    val indexable = implicitly[Indexable[T]]
+    private val indexable = implicitly[Indexable[T]]
 
-    override def apply(input: T[I]): Validity = {
-      val res = indexable.zipWithIndex(input).foldLeft[Validity](Invalid(False)) {
-        case (v, (e,idx)) =>
-          v || validateElement(e, idx)
-      }
-      if (res == Invalid(False)) {
-        Invalid(this)
-      } else {
-        res
-      }
+    override def apply(input: T[I]): Validity[T[I]] = {
+      val res = indexable.zipWithIndex(input)
+        .map { case (e, pos) => validateElement(e, pos) }
+        .reduceLeftOption(_ || _)
+      res.getOrElse(Invalid(this))
     }
 
-    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-    private def validateElement(e: I, idx: Int): Validity = elementValidation(e) match {
+    private def validateElement(e: I, idx: Int): Validity[T[I]] = elementValidation(e) match {
       case Valid => Valid
-      case Invalid(p) => Invalid(atPosition[T,I](idx, p.asInstanceOf[Predicate[I]]))
+      case Invalid(p) => Invalid(atPosition[T, I](idx, p))
     }
 
     override def opposite: Predicate[T[I]] = forAll(!elementValidation)

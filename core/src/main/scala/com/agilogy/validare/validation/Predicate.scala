@@ -20,7 +20,7 @@ sealed trait Predicate[-I] extends Product with Serializable {
 
   def implies[II <: I](other: Predicate[II]): Predicate[II] = !this || other
 
-  def apply(input: I): Validity
+  def apply(input: I): Validity[I]
 
 }
 
@@ -44,7 +44,7 @@ final case class OrPredicate[I](verifications: Seq[Predicate[I]]) extends Predic
 
   require(verifications.size >= 2)
 
-  override def apply(input: I): Validity = {
+  override def apply(input: I): Validity[I] = {
     verifications.map {
       _.apply(input)
     }.reduceLeft(_ || _)
@@ -59,7 +59,7 @@ final case class AndPredicate[I](verifications: Seq[Predicate[I]]) extends Predi
 
   require(verifications.size >= 2)
 
-  override def apply(input: I): Validity = verifications.foldLeft[Validity](Validity.Valid) {
+  override def apply(input: I): Validity[I] = verifications.foldLeft[Validity[I]](Validity.Valid) {
     case (acc, v) => acc && v.apply(input)
   }
 
@@ -69,7 +69,7 @@ final case class AndPredicate[I](verifications: Seq[Predicate[I]]) extends Predi
 }
 
 final case class NotPredicate[I](v: AtomicPredicate[I]) extends Predicate[I] {
-  override def apply(input: I): Validity = v.apply(input) match {
+  override def apply(input: I): Validity[I] = v.apply(input) match {
     case Validity.Valid => Validity.Invalid(this)
     case Validity.Invalid(_) => Validity.Valid
   }
@@ -117,11 +117,10 @@ trait Transformation[T,T2] extends AtomicPredicate[T]{
   */
 final case class TransformedPredicate[T,T2](transformation: Transformation[T,T2], verification:Predicate[T2]) extends Predicate[T]{
 
-  @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-  override def apply(input: T): Validity = transformation.f(input) match {
+  override def apply(input: T): Validity[T] = transformation.f(input) match {
     case Some(i2) => verification(i2) match {
       case Valid => Valid
-      case Invalid(p) => Invalid(TransformedPredicate(transformation,p.asInstanceOf[Predicate[T2]]))
+      case Invalid(p) => Invalid(TransformedPredicate(transformation,p))
     }
     case None =>
       //Validity.Invalid(transformation)
@@ -142,7 +141,7 @@ trait AtomicPredicate[-I] extends Predicate[I] {
   def satisfiedBy(value: I): Boolean
 
   //TODO: It was final. Make somehow difficult to override by accident (no idea how to do that, yet)
-  override def apply(input: I): Validity = {
+  override def apply(input: I): Validity[I] = {
     if (satisfiedBy(input))
       Validity.Valid
     else

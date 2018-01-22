@@ -274,7 +274,7 @@ class ExampleTest extends FunSpec {
 //      val js3 = JsInt(3)
       val js30 = JsInt(30)
       val jsJohn = JsString("John")
-      val jsPerson = JsObject(Map[String,JsValue]("name"->jsJohn, "age"->js30))
+      val jsPerson = JsObject(Map("name"->jsJohn, "age"->js30))
       val res: Validated[Person] = readPerson(jsPerson)
       assert(res.isSuccess)
       val Valid(p) = res

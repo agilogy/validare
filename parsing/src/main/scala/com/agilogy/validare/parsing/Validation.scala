@@ -19,7 +19,7 @@ final case class And[I, O](transformation: Parser[I, O], verification: Predicate
       case f: Validated.Invalid[O] => f
       case Validated.Valid(value) => verification.apply(value) match {
         case Validity.Valid => Valid(value)
-        case i: Validity.Invalid => FailedPredicate(i) //FailedPredicateAfter(i,transformation)
+        case Validity.Invalid(p) => FailedPredicate(Validity.Invalid(p)) //FailedPredicateAfter(i,transformation)
       }
     }
   }

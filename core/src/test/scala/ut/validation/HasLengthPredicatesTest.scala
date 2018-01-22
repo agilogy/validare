@@ -19,12 +19,12 @@ class HasLengthPredicatesTest extends FunSpec {
 
   it("should validate a collection is not empty") {
     assert(nonEmptyT(List(34)) === Validity.Valid)
-    assert(nonEmptyT(List()) === Validity.Invalid(nonEmptyT))
+    assert(nonEmptyT(List.empty[Int]) === Validity.Invalid(nonEmptyT[List[Int]]))
   }
 
   it("should validate a collection is empty") {
-    assert(isEmptyT(List()) === Validity.Valid)
-    assert(isEmptyT(List(23)) === Validity.Invalid(isEmptyT))
+    assert(isEmptyT(List.empty[Int]) === Validity.Valid)
+    assert(isEmptyT(List(23)) === Validity.Invalid(isEmptyT[List[Int]]))
   }
 
   it("should calculate the opposite of isEmpty and nonEmpty") {

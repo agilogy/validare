@@ -1,10 +1,12 @@
 package ut.validation
 
+import com.agilogy.validare.validation.Validity
 import com.agilogy.validare.validation.predicates.Predicates._
 import com.agilogy.validare.validation.Validity.{Invalid, Valid}
-import org.scalatest.FunSpec
+import org.scalatest.{FunSpec, Matchers}
 
-class ValidityTest extends FunSpec {
+@SuppressWarnings(Array("org.wartremover.warts.Any"))
+class ValidityTest extends FunSpec with Matchers{
 
   val startsWithA = startsWith("a")
   val endsWithZ = endsWith("z")
@@ -28,6 +30,15 @@ class ValidityTest extends FunSpec {
     assert((Invalid(startsWithA) || Valid) === Valid)
     assert((Invalid(startsWithA) || Invalid(endsWithZ)) === Invalid(startsWithA || endsWithZ))
     assert((Invalid(endsWithZ) || Invalid(startsWithA)) === Invalid(endsWithZ || startsWithA))
+  }
+
+  it("should be contravariant"){
+    "def invalidAnimal:Invalid[Animal] = ???; val catValidity:Validity[Cat] = invalidAnimal" should compile
+    "def validAny:Valid.type = Valid; val catValidity:Validity[Cat] = validAny" should compile
+    "def invalidCat:Invalid[Cat] = ???; val animalValidity:Validity[Animal] = invalidCat" shouldNot typeCheck
+    "def validAny:Valid.type = Valid; val animalValidity:Validity[Animal]" shouldNot typeCheck
+
+
   }
 
 }

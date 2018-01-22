@@ -4,6 +4,7 @@ import com.agilogy.validare.validation.Predicate.{False, True}
 
 trait PredicatesBooleanAlgebra {
 
+  //TODO: Shortcut
   def or[I](v1: Predicate[I], v2: Predicate[I]): Predicate[I] = (v1, v2) match {
     case (True, _) => True
     case (_, True) => True
@@ -15,6 +16,7 @@ trait PredicatesBooleanAlgebra {
     case (o1, o2) => OrPredicate(Seq(o1, o2))
   }
 
+  //TODO: Shortcut
   def and[I](v1: Predicate[I], v2: Predicate[I]): Predicate[I] = (v1, v2) match {
     case (False, _) => False
     case (_, False) => False

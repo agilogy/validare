@@ -20,7 +20,7 @@ trait TransformedPredicates {
 
     override def opposite: Predicate[S[E]] = length[S[E]].validate(lt(index))
 
-    override final def apply(input: S[E]): Validity = super.apply(input) match {
+    override final def apply(input: S[E]): Validity[S[E]] = super.apply(input) match {
       case Valid => Valid
       case Invalid(_) => Invalid(length[S[_]].validate(gteq(index)))
     }
