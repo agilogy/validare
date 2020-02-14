@@ -1,25 +1,29 @@
 package com.agilogy.validare
 
-import cats.implicits._
+import scala.reflect.ClassTag
 
+import cats.implicits._
 import com.agilogy.validare.validation.Predicate
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 
-final case class ValidationError[A](failsPredicate: Predicate[A]) extends Exception
+final case class ValidationError[A, B](typeName: String, failsPredicate: Predicate[B]) extends Exception
 
 trait ValidatedCompanionLike[A, B] {
 
   def predicate: Predicate[A]
   def unsafe(value: A): B
+  def typeName: String
 
-  def apply(value: A): Either[ValidationError[A], B] = predicate(value) match {
+  def apply(value: A): Either[ValidationError[B, A], B] = predicate(value) match {
     case Valid                    => unsafe(value).asRight
-    case Invalid(failedPredicate) => ValidationError(failedPredicate).asLeft
+    case Invalid(failedPredicate) => ValidationError[B, A](typeName, failedPredicate).asLeft
   }
 
 }
 
-abstract class ValidatedCompanion[A, B](validation: Predicate[A])(build: A => B) extends ValidatedCompanionLike[A, B] {
+abstract class ValidatedCompanion[A: ClassTag, B](validation: Predicate[A])(build: A => B)
+    extends ValidatedCompanionLike[A, B] {
   override def predicate: Predicate[A] = validation
   override def unsafe(value: A): B     = build(value)
+  override def typeName: String        = implicitly[ClassTag[A]].toString()
 }
