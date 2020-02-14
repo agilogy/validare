@@ -1,9 +1,10 @@
 package com.agilogy.validare.validation
 
+import cats.data.NonEmptyList
+
 import com.agilogy.validare.validation.Predicate.False
 import com.agilogy.validare.validation.PredicatesBooleanAlgebra._
 import com.agilogy.validare.validation.Validity._
-import cats.data.NonEmptyList
 
 sealed trait Predicate[-I] extends Product with Serializable {
 

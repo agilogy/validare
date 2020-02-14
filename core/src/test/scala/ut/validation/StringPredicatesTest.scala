@@ -1,9 +1,10 @@
 package ut.validation
 
-import com.agilogy.validare.validation.NotPredicate
-import com.agilogy.validare.validation.predicates.Predicates._
-import com.agilogy.validare.validation.Validity._
 import org.scalatest.funspec.AnyFunSpec
+
+import com.agilogy.validare.validation.NotPredicate
+import com.agilogy.validare.validation.Validity._
+import com.agilogy.validare.validation.predicates.Predicates._
 
 class StringPredicatesTest extends AnyFunSpec {
 

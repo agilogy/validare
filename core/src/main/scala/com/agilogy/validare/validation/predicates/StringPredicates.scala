@@ -1,9 +1,9 @@
 package com.agilogy.validare.validation.predicates
 
+import scala.util.matching.Regex
+
 import com.agilogy.validare.utils.RegexUtils._
 import com.agilogy.validare.validation.{AtomicPredicate, NotPredicate}
-
-import scala.util.matching.Regex
 
 trait StringPredicates {
 

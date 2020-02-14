@@ -1,8 +1,8 @@
 package com.agilogy.validare.validation.predicates
 
 import com.agilogy.validare.utils.Indexable
-import com.agilogy.validare.validation._
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
+import com.agilogy.validare.validation._
 
 trait FoldablePredicates {
   self: TransformedPredicates =>

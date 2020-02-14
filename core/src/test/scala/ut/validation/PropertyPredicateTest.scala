@@ -1,9 +1,10 @@
 package ut.validation
 
+import org.scalatest.freespec.AnyFreeSpec
+
 import com.agilogy.validare.validation.Property
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 import com.agilogy.validare.validation.predicates.Predicates._
-import org.scalatest.freespec.AnyFreeSpec
 
 class PropertyPredicateTest extends AnyFreeSpec {
 

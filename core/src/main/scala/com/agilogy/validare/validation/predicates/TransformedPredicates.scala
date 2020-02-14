@@ -1,10 +1,10 @@
 package com.agilogy.validare.validation.predicates
 
+import scala.language.higherKinds
+
 import com.agilogy.validare.utils.{ HasLength, Indexable }
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 import com.agilogy.validare.validation._
-
-import scala.language.higherKinds
 
 trait TransformedPredicates {
   self: OrderingPredicates =>

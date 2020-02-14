@@ -1,7 +1,8 @@
 package com.agilogy.validare.validation
 
-import com.agilogy.validare.validation.Predicate.{ False, True }
 import cats.data.NonEmptyList
+
+import com.agilogy.validare.validation.Predicate.{ False, True }
 
 trait PredicatesBooleanAlgebra {
 

@@ -1,9 +1,10 @@
 package ut.validation
 
+import org.scalatest.funspec.AnyFunSpec
+
 import com.agilogy.validare.validation.Validity
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 import com.agilogy.validare.validation.predicates.Predicates._
-import org.scalatest.funspec.AnyFunSpec
 
 class HasLengthPredicatesTest extends AnyFunSpec {
 
