@@ -3,9 +3,9 @@ package ut.validation
 import com.agilogy.validare.validation.NotPredicate
 import com.agilogy.validare.validation.predicates.Predicates._
 import com.agilogy.validare.validation.Validity._
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 
-class StringPredicatesTest extends FunSpec {
+class StringPredicatesTest extends AnyFunSpec {
 
   it("should validate a string matches a regex") {
     val isAsciiAlpha = matches("ascii-alpha", "[a-zA-Z]+".r)

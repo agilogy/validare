@@ -2,9 +2,9 @@ package ut.validation
 
 import com.agilogy.validare.validation.Validity
 import com.agilogy.validare.validation.predicates.Predicates._
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 
-class OrderingPredicatesTest extends FunSpec {
+class OrderingPredicatesTest extends AnyFunSpec {
 
   it("should validate gt") {
     val gt3 = gt(3)
@@ -34,14 +34,14 @@ class OrderingPredicatesTest extends FunSpec {
 
   it("should calculate the opposites of lteq and gt") {
     val lteq3 = lteq(3)
-    val gt3 = gt(3)
+    val gt3   = gt(3)
     assert(!lteq3 === gt3)
     assert(!gt3 === lteq3)
   }
 
   it("should calculate the opposites of gteq and lt") {
     val gteq3 = gteq(3)
-    val lt3 = lt(3)
+    val lt3   = lt(3)
     assert(!gteq3 === lt3)
     assert(!lt3 === gteq3)
   }

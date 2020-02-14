@@ -1,18 +1,14 @@
-resolvers += Classpaths.sbtPluginReleases
+resolvers += Resolver.bintrayRepo("ktosopl", "sbt-plugins/sbt-jcstress")
 
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.0.4")
-
-addSbtPlugin("org.scoverage" % "sbt-coveralls" % "1.0.0.BETA1")
-
-addSbtPlugin("org.scalastyle" %% "scalastyle-sbt-plugin" % "0.6.0")
-
-addSbtPlugin("com.typesafe.sbt" % "sbt-scalariform" % "1.3.0")
-
-resolvers += Resolver.url(
-  "bintray-sbt-plugin-releases",
-  url("http://dl.bintray.com/content/sbt/sbt-plugin-releases"))(
-  Resolver.ivyStylePatterns)
-
-addSbtPlugin("me.lessis" % "bintray-sbt" % "0.3.0")
-
-addSbtPlugin("org.wartremover" % "sbt-wartremover" % "1.1.1")
+addSbtPlugin("org.foundweekends"                 % "sbt-bintray"               % "0.5.6")
+addSbtPlugin("org.scalameta"                     % "sbt-scalafmt"              % "2.3.0")
+addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings"          % "3.0.0")
+addSbtPlugin("com.github.cb372"                  % "sbt-explicit-dependencies" % "0.2.11")
+addSbtPlugin("de.heikoseeberger"                 % "sbt-header"                % "5.3.1")
+addSbtPlugin("org.scalameta"                     % "sbt-mdoc"                  % "1.3.6")
+addSbtPlugin("ch.epfl.scala"                     % "sbt-bloop"                 % "1.3.5")
+addSbtPlugin("com.dwijnand"                      % "sbt-dynver"                % "4.0.0")
+addSbtPlugin("ch.epfl.scala"                     % "sbt-scalafix"              % "0.9.11")
+addSbtPlugin("org.wartremover"                   % "sbt-wartremover"           % "2.4.3")
+addSbtPlugin("com.typesafe.sbt"                  % "sbt-native-packager"       % "1.6.1")
+addSbtPlugin("com.typesafe.sbt"                  % "sbt-git"                   % "1.0.0")

@@ -1,19 +1,19 @@
 package ut.validation
 
-import com.agilogy.validare.validation.{Property, NotPredicate}
-import com.agilogy.validare.validation.Validity.{Invalid, Valid}
-import org.scalatest.FreeSpec
+import com.agilogy.validare.validation.Property
+import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 import com.agilogy.validare.validation.predicates.Predicates._
+import org.scalatest.freespec.AnyFreeSpec
 
-class PropertyPredicateTest extends FreeSpec{
+class PropertyPredicateTest extends AnyFreeSpec {
 
   "field predicate" - {
-    val catName: Property[Cat, String] = at[Cat]("name",_.name)
-    val catNameNotEmpty = catName(nonEmptyS)
+    val catName: Property[Cat, String] = at[Cat]("name", _.name)
+    val catNameNotEmpty                = catName(nonEmptyS)
 
     "should validate fields" in {
-      assert(catNameNotEmpty(Cat("",8)) === Invalid(catNameNotEmpty))
-      assert(catNameNotEmpty(Cat("Garfield",8)) === Valid)
+      assert(catNameNotEmpty(Cat("", 8)) === Invalid(catNameNotEmpty))
+      assert(catNameNotEmpty(Cat("Garfield", 8)) === Valid)
     }
 
     "should have an opposite" in {
@@ -21,7 +21,7 @@ class PropertyPredicateTest extends FreeSpec{
     }
   }
 
-  "length predicate" - {
+  "length predicate" in {
     val lengthGt3 = length[String].validate(gt(3))
     assert(lengthGt3("abc") === Invalid(lengthGt3))
     assert(lengthGt3("abcd") === Valid)

@@ -1,36 +1,35 @@
 package ut.validation
 
-import com.agilogy.validare.validation.Predicate.{False, True}
-import com.agilogy.validare.validation.Validity.{Invalid, Valid}
-import com.agilogy.validare.validation.{AndPredicate, NotPredicate, OrPredicate, Predicate}
-import org.scalatest.FunSpec
+import com.agilogy.validare.validation.Predicate.{ False, True }
+import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
+import com.agilogy.validare.validation.{ AndPredicate, NotPredicate, OrPredicate, Predicate }
 import com.agilogy.validare.validation.predicates.Predicates._
+import org.scalatest.funspec.AnyFunSpec
+import cats.data.NonEmptyList
 
-@SuppressWarnings(Array("org.wartremover.warts.Any"))
-@SuppressWarnings(Array("org.wartremover.warts.Unused"))
-class PredicateTest extends FunSpec {
+class PredicateTest extends AnyFunSpec {
 
-  val startsWithA = startsWith("a")
-  val endsWithA = endsWith("a")
-  val startsOrEndsWithA = startsWithA || endsWithA
-  val startsAndEndsWithA = startsWithA && endsWithA
-  val isEmptyOrBlank = isEmptyS || isBlank
-  val allLower = matches("lowercase", "[a-z0-9]+".r)
-  val alpha = matches("alpha", "[A-Za-z]+".r)
-  val allLowerAlpha = allLower && alpha
+  private val startsWithA        = startsWith("a")
+  private val endsWithA          = endsWith("a")
+  private val startsOrEndsWithA  = startsWithA || endsWithA
+  private val startsAndEndsWithA = startsWithA && endsWithA
+  private val isEmptyOrBlank     = isEmptyS || isBlank
+  private val allLower           = matches("lowercase", "[a-z0-9]+".r)
+  private val alpha              = matches("alpha", "[A-Za-z]+".r)
+  private val allLowerAlpha      = allLower && alpha
 
   it("should have True and False predicates") {
     assert(True("foo") === Valid)
     assert(False("foo") === Invalid(False))
   }
 
-  it("should pass the disjuntion of predicates if one passes"){
+  it("should pass the disjuntion of predicates if one passes") {
     assert(startsOrEndsWithA("abc") === Valid)
     assert(startsOrEndsWithA("cba") === Valid)
     assert(startsOrEndsWithA("foo") === Invalid(startsOrEndsWithA))
   }
 
-  it("should reduce failed disjuntion to the failing parts"){
+  it("should reduce failed disjuntion to the failing parts") {
     val p = (startsWithA && allLower) || (alpha && endsWithA)
     assert(p("abCDE") === Invalid(allLower || endsWithA))
     assert(p("foo42") === Invalid(startsWithA || (alpha && endsWithA)))
@@ -62,20 +61,24 @@ class PredicateTest extends FunSpec {
   }
 
   it("should calculate the disjuntion of two predicates") {
-    assert((startsWithA || endsWithA) === OrPredicate(Seq(startsWithA, endsWithA)))
-    assert((startsOrEndsWithA || isEmptyS) === OrPredicate(Seq(startsWithA, endsWithA, isEmptyS)))
-    assert((isEmptyS || startsOrEndsWithA) === OrPredicate(Seq(isEmptyS, startsWithA, endsWithA)))
-    assert((isEmptyOrBlank || startsOrEndsWithA) === OrPredicate(Seq(isEmptyS, isBlank, startsWithA, endsWithA)))
+    assert((startsWithA || endsWithA) === OrPredicate(NonEmptyList.of(startsWithA, endsWithA)))
+    assert((startsOrEndsWithA || isEmptyS) === OrPredicate(NonEmptyList.of(startsWithA, endsWithA, isEmptyS)))
+    assert((isEmptyS || startsOrEndsWithA) === OrPredicate(NonEmptyList.of(isEmptyS, startsWithA, endsWithA)))
+    assert(
+      (isEmptyOrBlank || startsOrEndsWithA) === OrPredicate(NonEmptyList.of(isEmptyS, isBlank, startsWithA, endsWithA))
+    )
     assert(startsOrEndsWithA("abc") === Valid)
     assert(startsOrEndsWithA("cba") === Valid)
     assert(startsOrEndsWithA("foo") === Invalid(startsOrEndsWithA))
   }
 
   it("should calculate the conjuntion of two predicates") {
-    assert((startsWithA && endsWithA) === AndPredicate(Seq(startsWithA, endsWithA)))
-    assert((startsAndEndsWithA && allLower) === AndPredicate(Seq(startsWithA, endsWithA, allLower)))
-    assert((allLower && startsAndEndsWithA) === AndPredicate(Seq(allLower, startsWithA, endsWithA)))
-    assert((allLowerAlpha && startsAndEndsWithA) === AndPredicate(Seq(allLower, alpha, startsWithA, endsWithA)))
+    assert((startsWithA && endsWithA) === AndPredicate(NonEmptyList.of(startsWithA, endsWithA)))
+    assert((startsAndEndsWithA && allLower) === AndPredicate(NonEmptyList.of(startsWithA, endsWithA, allLower)))
+    assert((allLower && startsAndEndsWithA) === AndPredicate(NonEmptyList.of(allLower, startsWithA, endsWithA)))
+    assert(
+      (allLowerAlpha && startsAndEndsWithA) === AndPredicate(NonEmptyList.of(allLower, alpha, startsWithA, endsWithA))
+    )
     assert(startsAndEndsWithA("abracadabra") === Valid)
     assert(startsAndEndsWithA("abracadabro") === Invalid(endsWithA))
     assert(startsAndEndsWithA("obracadabra") === Invalid(startsWithA))
@@ -89,8 +92,8 @@ class PredicateTest extends FunSpec {
 
   it("should negate atomic predicates without opposites") {
     assert(!startsWithA === NotPredicate(startsWithA))
-    assert((!startsWithA) ("abc") === Invalid(!startsWithA))
-    assert((!startsWithA) ("foo") === Valid)
+    assert((!startsWithA)("abc") === Invalid(!startsWithA))
+    assert((!startsWithA)("foo") === Valid)
   }
 
   it("should negate conjuntion predicates") {
@@ -111,16 +114,15 @@ class PredicateTest extends FunSpec {
   }
 
   it("should be contravariant") {
-    val nonEmptyName:Predicate[Animal] = at[Animal]("name",_.name)(nonEmptyS)
-    val dogName:Predicate[Dog] = at[Dog]("name",_.name)(endsWith("y"))
-    val dogValidation: Predicate[Dog] = nonEmptyName && dogName
-    val catValidation: Predicate[Cat] = nonEmptyName
+    val nonEmptyName: Predicate[Animal] = at[Animal]("name", _.name)(nonEmptyS)
+    val dogName: Predicate[Dog]         = at[Dog]("name", _.name)(endsWith("y"))
+    val dogValidation: Predicate[Dog]   = nonEmptyName && dogName
+    val catValidation: Predicate[Cat]   = nonEmptyName
     assert(dogValidation(Dog("Snoopy")) === Valid)
     assert(dogValidation(Dog("")) === Invalid(nonEmptyName && dogName))
     assert(dogValidation(Dog("Garfield")) === Invalid(dogName))
-    assert(catValidation(Cat("",3)) === Invalid(nonEmptyName))
-    assert(catValidation(Cat("Garfield",3)) === Valid)
-
+    assert(catValidation(Cat("", 3)) === Invalid(nonEmptyName))
+    assert(catValidation(Cat("Garfield", 3)) === Valid)
 
   }
 

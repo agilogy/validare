@@ -1,11 +1,11 @@
 package ut.validation
 
 import com.agilogy.validare.validation.Validity
-import com.agilogy.validare.validation.Validity.{Invalid, Valid}
+import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 import com.agilogy.validare.validation.predicates.Predicates._
-import org.scalatest.FunSpec
+import org.scalatest.funspec.AnyFunSpec
 
-class HasLengthPredicatesTest extends FunSpec {
+class HasLengthPredicatesTest extends AnyFunSpec {
 
   it("should validate a string is not empty") {
     assert(nonEmptyS("foo") === Validity.Valid)
@@ -34,10 +34,10 @@ class HasLengthPredicatesTest extends FunSpec {
     assert(!nonEmptyT[List[Int]] === isEmptyT[List[Int]])
   }
 
-  it("should build predicates on length"){
+  it("should build predicates on length") {
     //TODO: Try to avoid having to write .apply
     val lengthGt2 = length[Seq[Int]].apply(gt(2))
-    assert(lengthGt2(Seq(1,2,3)) === Valid)
-    assert(lengthGt2(Seq(1,2)) === Invalid(lengthGt2))
+    assert(lengthGt2(Seq(1, 2, 3)) === Valid)
+    assert(lengthGt2(Seq(1, 2)) === Invalid(lengthGt2))
   }
 }
