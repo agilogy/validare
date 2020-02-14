@@ -13,7 +13,7 @@ lazy val root = project
 val core = project.module
   .settings(
     name := "validare-core",
-    version := "0.1",
+    version := "0.2",
     libraryDependencies ++= Seq(
       catsCore,
       scalaTest
