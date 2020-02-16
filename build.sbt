@@ -19,4 +19,4 @@ val core = project.module
       scalaTest
     )
   )
-  .settings(Publish.publishSettings: _*)
+  .settings(Publish.publishSettings)

@@ -6,7 +6,9 @@ import cats.implicits._
 import com.agilogy.validare.validation.Predicate
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 
-final case class ValidationError[A, B](typeName: String, failsPredicate: Predicate[B]) extends Exception
+final case class ValidationError[A, B](typeName: String, failsPredicate: Predicate[B]) extends Exception {
+  override def getMessage: String = s"Error validating $typeName. The value fails to satisfy $failsPredicate."
+}
 
 trait ValidatedCompanionLike[A, B] {
 
