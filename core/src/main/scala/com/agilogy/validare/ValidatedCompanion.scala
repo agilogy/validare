@@ -24,9 +24,9 @@ trait ValidatedCompanionLike[A, B] {
 
 }
 
-abstract class ValidatedCompanion[A: ClassTag, B](validation: Predicate[A])(build: A => B)
+abstract class ValidatedCompanion[A, B: ClassTag](validation: Predicate[A])(build: A => B)
     extends ValidatedCompanionLike[A, B] {
   override def predicate: Predicate[A] = validation
   override def unsafe(value: A): B     = build(value)
-  override def typeName: String        = implicitly[ClassTag[A]].toString()
+  override def typeName: String        = implicitly[ClassTag[B]].toString()
 }
