@@ -9,6 +9,7 @@ lazy val root = project
     welcomeMessage,
     skip in publish := true
   )
+  .aggregate(core)
 
 val core = project.module
   .settings(

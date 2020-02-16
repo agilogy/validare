@@ -3,6 +3,7 @@ package com.agilogy.validare
 import scala.reflect.ClassTag
 
 import cats.implicits._
+
 import com.agilogy.validare.validation.Predicate
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 
