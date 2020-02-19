@@ -17,6 +17,7 @@ val core = project.module
     version := "0.3.3",
     libraryDependencies ++= Seq(
       catsCore,
+      catsKernel,
       scalaTest
     )
   )
