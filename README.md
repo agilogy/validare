@@ -1,7 +1,6 @@
 # Validare
 
-- A functional validation library without ScalaZ nor Cats
-
+- A functional validation library (now with Cats)
 ## TO-DO
 
 - Document it
