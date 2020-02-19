@@ -4,6 +4,8 @@ import cats.Order
 import cats.data.NonEmptyList
 import cats.implicits._
 
+import com.github.ghik.silencer.silent
+
 import com.agilogy.validare.validation.PredicatesBooleanAlgebra._
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 
@@ -128,18 +130,30 @@ final case class is[A, B](transformation: Transformation[A, B]) extends AtomicPr
  * Note that PropertyPredicate is similar but the transformation is assumed to never fail
  * @tparam A The type of the value that will be validated
  */
-trait TransformedPredicate[A] extends Predicate[A] {
+sealed trait TransformedPredicate[A] extends Predicate[A] { self =>
   type Result
-  def transformation: Transformation[A, Result]
-  def verification: NonTransformedPredicate[Result]
 
-  def andThen(predicate: TransformedPredicate[Result]): Predicate[A] =
-    this && transformation.andThen(predicate.transformation).satisfies(predicate.verification)
+  def andThen[C](predicate: TransformedPredicate[Result] { type Result = C })
+    : TransformedPredicate[A] { type Result = C }
+
+  def parse(input: A): Either[Invalid[A], Result]
 
   override final def apply(input: A): Validity[A] = parse(input) match {
     case Left(Invalid(p)) => Invalid(p)
     case _                => Valid
   }
+
+}
+
+final case class SimpleTransformedPredicate[A, B](
+  transformation: Transformation[A, B],
+  verification: NonTransformedPredicate[B]
+) extends TransformedPredicate[A] { self =>
+  type Result = B
+
+  override def andThen[C](predicate: TransformedPredicate[B] { type Result = C })
+    : CompoundTransformedPredicate[A, B, C] =
+    CompoundTransformedPredicate(this, predicate)
 
   override def toString: String = s"$transformation.satisfies($verification)"
 
@@ -148,7 +162,7 @@ trait TransformedPredicate[A] extends Predicate[A] {
     transformation.requirement.fold[Predicate[A]](satisfaction)(r => !r || satisfaction)
   }
 
-  def parse(input: A): Either[Invalid[A], Result] = transformation(input) match {
+  override def parse(input: A): Either[Invalid[A], Result] = transformation(input) match {
     case Right(i2) =>
       verification(i2) match {
         case Valid                                       => i2.asRight[Invalid[A]]
@@ -156,8 +170,79 @@ trait TransformedPredicate[A] extends Predicate[A] {
         case Invalid(p: NonTransformedPredicate[Result]) => Invalid(transformation.satisfies(p)).asLeft[Result]
       }
     case Left(Invalid(failedPredicate)) =>
-      Invalid(failedPredicate && this).asLeft[Result]
+      val res = Invalid(failedPredicate && this).asLeft[Result]
+      println(
+        s"Failed to validate simple $this when validating $transformation with $failedPredicate, so failing $this with $res"
+      )
+      res
 
   }
+
+}
+
+final case class CompoundTransformedPredicate[A, B, C](
+  head: SimpleTransformedPredicate[A, B],
+  verification: TransformedPredicate[B] { type Result = C }
+) extends TransformedPredicate[A] {
+  type Result = C
+
+  override def andThen[D](predicate: TransformedPredicate[C] { type Result = D })
+    : CompoundTransformedPredicate[A, B, D] =
+    CompoundTransformedPredicate(head, verification.andThen(predicate))
+
+  override def toString: String = s"$head.andThen($verification)"
+
+  override def opposite: Predicate[A] = head.opposite || head.transformation.andThen(verification).opposite
+
+  override def parse(input: A): Either[Invalid[A], Result] =
+    head.transformation.apply(input) match {
+      case Left(Invalid(p)) =>
+        val res = Left(Invalid(p && this))
+        println(s"Validating: $this\nFailed: ${head.transformation}\nFor value: $input\nWith:$p\nReturning: $res\n")
+        res
+      case Right(value) =>
+        val headResult: Either[Invalid[A], B] = head.parse(input).leftMap {
+          case Invalid(p) =>
+            val res = Invalid(p)
+            println(s"Validating: $this\nFailed: $head\nFor value: $input\nWith:$p\nReturning: $res\n")
+            res
+        }
+        val tailResult: Either[Invalid[A], C] = verification.parse(value).leftMap {
+          case Invalid(p: NonTransformedPredicate[B]) =>
+            val res = Invalid(head.transformation.satisfies(p))
+            println(s"Validating: $this\nFailed: $verification\nFor value: $value\nWith:$p\nReturning: $res\n")
+            res
+          case Invalid(p: TransformedPredicate[B]) =>
+            val res = Invalid(head.transformation.andThen(p))
+            println(s"Validating: $this\nFailed: $verification\nFor value: $value\nWith:$p\nReturning: $res\n")
+            res
+        }
+        (headResult, tailResult) match {
+          case (Left(Invalid(p1)), Left(Invalid(p2))) => Left(Invalid(p1 && p2))
+          case (Left(Invalid(p1)), _)                 => Left(Invalid(p1))
+          case (_, Left(Invalid(p2)))                 => Left(Invalid(p2))
+          case (Right(_), Right(v))                   => Right(v)
+        }
+    }
+
+}
+
+object TransformedPredicate {
+  @silent("unchecked")
+  @silent("Recursion")
+  def transformationAndThen[A, B, C](
+    transformation: Transformation[A, B],
+    predicate: TransformedPredicate[B] { type Result = C }
+  ): TransformedPredicate[A] { type Result = C } = predicate match {
+    case s: SimpleTransformedPredicate[B, C] =>
+      (transformation andThen s.transformation).satisfies(s.verification)
+    case s: CompoundTransformedPredicate[B, x, C] =>
+      transformationAndThen(transformation, s.head).andThen(s.verification)
+  }
+
+  def transformationSatisfies[A, B](
+    transformation: Transformation[A, B],
+    satisfies: NonTransformedPredicate[B]
+  ): TransformedPredicate[A] { type Result = B } = SimpleTransformedPredicate(transformation, satisfies)
 
 }

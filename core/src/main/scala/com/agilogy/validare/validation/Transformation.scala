@@ -2,7 +2,6 @@ package com.agilogy.validare.validation
 
 import cats.implicits._
 
-import com.agilogy.validare.validation.Transformation.SimpleTransformedPredicate
 import com.agilogy.validare.validation.Validity.Invalid
 
 trait Transformation[A, B] {
@@ -10,21 +9,14 @@ trait Transformation[A, B] {
   def transform(value: A): Option[B]
   def apply(other: NonTransformedPredicate[B]): TransformedPredicate[A] = this.satisfies(other)
   def andThen(other: TransformedPredicate[B]): TransformedPredicate[A] { type Result = other.Result } =
-    (this andThen other.transformation).satisfies(other.verification)
+    TransformedPredicate.transformationAndThen(this, other)
   def satisfies(other: NonTransformedPredicate[B]): TransformedPredicate[A] { type Result = B } =
-    SimpleTransformedPredicate(this, other)
-  def requirement: Option[Predicate[A]]                         = Some(is(this))
-  def andThen[C](b: Transformation[B, C]): Transformation[A, C] = AndThen(this, b)
-}
-
-object Transformation {
-  private final case class SimpleTransformedPredicate[A, B](
-    transformation: Transformation[A, B],
-    verification: NonTransformedPredicate[B]
-  ) extends TransformedPredicate[A] {
-    type Result = B
+    TransformedPredicate.transformationSatisfies(this, other)
+  def requirement: Option[Predicate[A]] = Some(is(this))
+  def andThen[C](b: Transformation[B, C]): Transformation[A, C] = b match {
+    case AndThen(t1, t2) => AndThen(AndThen(this, t1), t2)
+    case _               => AndThen(this, b)
   }
-
 }
 
 final case class AndThen[A, B, C](t1: Transformation[A, B], t2: Transformation[B, C]) extends Transformation[A, C] {
