@@ -4,7 +4,6 @@ import cats.data.NonEmptyList
 
 import org.scalatest.funspec.AnyFunSpec
 
-import com.agilogy.validare.validation.Predicate.{ False, True }
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 import com.agilogy.validare.validation.predicates.Predicates._
 import com.agilogy.validare.validation.{ AndPredicate, NotPredicate, OrPredicate, Predicate }
@@ -20,10 +19,10 @@ class PredicateTest extends AnyFunSpec {
   private val alpha              = matches("alpha", "[A-Za-z]+".r)
   private val allLowerAlpha      = allLower && alpha
 
-  it("should have True and False predicates") {
-    assert(True("foo") === Valid)
-    assert(False("foo") === Invalid(False))
-  }
+//  it("should have True and False predicates") {
+//    assert(True("foo") === Valid)
+//    assert(False("foo") === Invalid(False))
+//  }
 
   it("should pass the disjuntion of predicates if one passes") {
     assert(startsOrEndsWithA("abc") === Valid)
@@ -37,30 +36,30 @@ class PredicateTest extends AnyFunSpec {
     assert(p("foo42") === Invalid(startsWithA || (alpha && endsWithA)))
   }
 
-  it("disjuntion with True is always True") {
-    assert((True || startsOrEndsWithA) === True)
-    assert((startsOrEndsWithA || True) === True)
-  }
-
-  it("False is identity for disjuntion") {
-    assert((False || startsOrEndsWithA) === startsOrEndsWithA)
-    assert((startsOrEndsWithA || False) === startsOrEndsWithA)
-  }
-
-  it("conjuntion with False is always false") {
-    assert((False && startsOrEndsWithA) === False)
-    assert((startsOrEndsWithA && False) === False)
-  }
-
-  it("True is identity for conjuntion") {
-    assert((True && startsOrEndsWithA) === startsOrEndsWithA)
-    assert((startsOrEndsWithA && True) === startsOrEndsWithA)
-  }
-
-  it("True is the opposite of False") {
-    assert(!True === False)
-    assert(!False === True)
-  }
+//  it("disjuntion with True is always True") {
+//    assert((True || startsOrEndsWithA) === True)
+//    assert((startsOrEndsWithA || True) === True)
+//  }
+//
+//  it("False is identity for disjuntion") {
+//    assert((False || startsOrEndsWithA) === startsOrEndsWithA)
+//    assert((startsOrEndsWithA || False) === startsOrEndsWithA)
+//  }
+//
+//  it("conjuntion with False is always false") {
+//    assert((False && startsOrEndsWithA) === False)
+//    assert((startsOrEndsWithA && False) === False)
+//  }
+//
+//  it("True is identity for conjuntion") {
+//    assert((True && startsOrEndsWithA) === startsOrEndsWithA)
+//    assert((startsOrEndsWithA && True) === startsOrEndsWithA)
+//  }
+//
+//  it("True is the opposite of False") {
+//    assert(!True === False)
+//    assert(!False === True)
+//  }
 
   it("should calculate the disjuntion of two predicates") {
     assert((startsWithA || endsWithA) === OrPredicate(NonEmptyList.of(startsWithA, endsWithA)))
