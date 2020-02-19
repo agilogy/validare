@@ -1,8 +1,9 @@
 package com.agilogy.validare.validation
 
+import cats.implicits._
+
 import com.agilogy.validare.validation.Transformation.SimpleTransformedPredicate
 import com.agilogy.validare.validation.Validity.Invalid
-import cats.implicits._
 
 trait Transformation[A, B] {
   def apply(value: A): Either[Invalid[A], B] = transform(value).toRight(Invalid(requirement.getOrElse(is(this))))
