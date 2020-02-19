@@ -112,16 +112,13 @@ class PropertyPredicateTest extends AnyFreeSpec {
       assert(p("4") === Invalid(intString.andThen(toRomanLtX.satisfies(endsWith("i")))))
     }
     "should complain about failed transformations (merging previous passed ones) and about non checked predicates after the transformation" in {
+      assert(p("a") === Invalid(is(intString) && p))
       assert(
         p("200000") == Invalid(
           intString.satisfies(is(toRomanLtX)) &&
             intString.andThen(toRomanLtX).satisfies(length.satisfies(lt(3)) && endsWith("i"))
         )
       )
-    }
-    "should work" in {
-      println(p)
-      assert(p("a") === Invalid(is(intString) && p))
     }
   }
 

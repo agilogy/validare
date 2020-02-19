@@ -113,24 +113,12 @@ trait AtomicPredicate[-I] extends NonTransformedPredicate[I] {
     else
       Validity.Invalid(this)
 
-//  override def toString: String = id
 }
 
 final case class is[A, B](transformation: Transformation[A, B]) extends AtomicPredicate[A] {
   override def opposite: NotPredicate[A]      = NotPredicate(this)
   override def satisfiedBy(value: A): Boolean = transformation(value).isRight
 }
-
-//sealed trait TransformedPredicate[A, B] extends Predicate[A] {
-//  def andThen[C](predicate: SimpleTransformedPredicate[B, C]): ChainedTransformedPredicate[A, B, C] =
-//    ChainedTransformedPredicate(this, predicate)
-//  def parse(input: A): Either[Invalid[A], B]
-//  def transformation: Transformation[A, B]
-//  override final def apply(input: A): Validity[A] = parse(input) match {
-//    case Left(Invalid(p)) => Invalid(p)
-//    case _                => Valid
-//  }
-//}
 
 /**
  * A predicate that validates a value after some transformation that may itself fail
@@ -162,8 +150,7 @@ trait TransformedPredicate[A] extends Predicate[A] {
   def parse(input: A): Either[Invalid[A], Result] = transformation(input) match {
     case Right(i2) =>
       verification(i2) match {
-        case Valid => i2.asRight[Invalid[A]]
-        //        case Invalid(t:TransformedPredicate[A]) => Invalid(transformation.satisfies(s)).asLeft[B]
+        case Valid                                       => i2.asRight[Invalid[A]]
         case Invalid(p: TransformedPredicate[Result])    => Invalid(transformation.andThen(p)).asLeft[Result]
         case Invalid(p: NonTransformedPredicate[Result]) => Invalid(transformation.satisfies(p)).asLeft[Result]
       }
@@ -173,35 +160,3 @@ trait TransformedPredicate[A] extends Predicate[A] {
   }
 
 }
-
-final case class SimpleTransformedPredicate[A, B](
-  transformation: Transformation[A, B],
-  verification: NonTransformedPredicate[B]
-) extends TransformedPredicate[A] {
-  type Result = B
-}
-
-//final case class ChainedTransformedPredicate[A, B, C](
-//  init: TransformedPredicate[A, B],
-//  last: SimpleTransformedPredicate[B, C]
-//) extends TransformedPredicate[A, C] {
-//
-//  override def toString: String = s"$init.andThen($last)"
-//
-//  override def transformation: Transformation[A, C] = AndThen(init.transformation, last.transformation)
-//
-//  def parse(input: A): Either[Invalid[A], C] =
-//    for {
-//      res1 <- init.parse(input).leftMap {
-//               case Invalid(predicate) => Invalid(predicate && transformation.andThen(last.verification))
-//             }
-//      res2 <- last.parse(res1).leftMap {
-////               case Invalid(s @ SimpleTransformedPredicate(_, _)) =>
-////                 Invalid(init.transformation.validate(s))
-//               case Invalid(predicate) => Invalid(init.transformation.andThen(predicate))
-//             }
-//    } yield res2
-//
-//  override def opposite: Predicate[A] = !init || !transformation.andThen(last.verification)
-//
-//}
