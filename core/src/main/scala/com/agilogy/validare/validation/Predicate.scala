@@ -3,9 +3,11 @@ package com.agilogy.validare.validation
 import cats.Order
 import cats.data.NonEmptyList
 import cats.implicits._
+
+import com.github.ghik.silencer.silent
+
 import com.agilogy.validare.validation.PredicatesBooleanAlgebra._
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
-import com.github.ghik.silencer.silent
 
 sealed trait Predicate[-I] extends Product with Serializable {
 

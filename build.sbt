@@ -18,7 +18,8 @@ val core = project.module
     libraryDependencies ++= Seq(
       catsCore,
       catsKernel,
-      scalaTest
+      scalaTest,
+      silencerLib
     )
   )
   .settings(Publish.publishSettings)
