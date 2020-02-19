@@ -130,8 +130,8 @@ final case class is[A, B](transformation: Transformation[A, B]) extends AtomicPr
  */
 trait TransformedPredicate[A] extends Predicate[A] {
   type Result
-  def transformation: Transformation[A, Result]
-  def verification: NonTransformedPredicate[Result]
+  protected def transformation: Transformation[A, Result]
+  protected def verification: NonTransformedPredicate[Result]
 
   def andThen(predicate: TransformedPredicate[Result]): Predicate[A] =
     this && transformation.andThen(predicate.transformation).satisfies(predicate.verification)
@@ -159,5 +159,14 @@ trait TransformedPredicate[A] extends Predicate[A] {
       Invalid(failedPredicate && this).asLeft[Result]
 
   }
+
+}
+
+object TransformedPredicate {
+  def of[A, B](
+    transformation: Transformation[A, B],
+    predicate: TransformedPredicate[B]
+  ): TransformedPredicate[A] { type Result = predicate.Result } =
+    (transformation andThen predicate.transformation).satisfies(predicate.verification)
 
 }

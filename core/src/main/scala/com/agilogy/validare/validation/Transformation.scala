@@ -10,7 +10,7 @@ trait Transformation[A, B] {
   def transform(value: A): Option[B]
   def apply(other: NonTransformedPredicate[B]): TransformedPredicate[A] = this.satisfies(other)
   def andThen(other: TransformedPredicate[B]): TransformedPredicate[A] { type Result = other.Result } =
-    (this andThen other.transformation).satisfies(other.verification)
+    TransformedPredicate.of(this, other)
   def satisfies(other: NonTransformedPredicate[B]): TransformedPredicate[A] { type Result = B } =
     SimpleTransformedPredicate(this, other)
   def requirement: Option[Predicate[A]]                         = Some(is(this))
