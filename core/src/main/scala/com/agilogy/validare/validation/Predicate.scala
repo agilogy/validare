@@ -163,10 +163,22 @@ trait TransformedPredicate[A] extends Predicate[A] {
 }
 
 object TransformedPredicate {
-  def of[A, B](
+  def transformationAndThen[A, B](
     transformation: Transformation[A, B],
     predicate: TransformedPredicate[B]
   ): TransformedPredicate[A] { type Result = predicate.Result } =
     (transformation andThen predicate.transformation).satisfies(predicate.verification)
+
+  def transformationSatisfies[A, B](
+    transformation: Transformation[A, B],
+    satisfies: NonTransformedPredicate[B]
+  ): TransformedPredicate[A] { type Result = B } = SimpleTransformedPredicate(transformation, satisfies)
+
+  private final case class SimpleTransformedPredicate[A, B](
+    transformation: Transformation[A, B],
+    verification: NonTransformedPredicate[B]
+  ) extends TransformedPredicate[A] {
+    type Result = B
+  }
 
 }
