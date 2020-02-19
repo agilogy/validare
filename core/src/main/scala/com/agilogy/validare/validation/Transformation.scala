@@ -12,8 +12,11 @@ trait Transformation[A, B] {
     TransformedPredicate.transformationAndThen(this, other)
   def satisfies(other: NonTransformedPredicate[B]): TransformedPredicate[A] { type Result = B } =
     TransformedPredicate.transformationSatisfies(this, other)
-  def requirement: Option[Predicate[A]]                         = Some(is(this))
-  def andThen[C](b: Transformation[B, C]): Transformation[A, C] = AndThen(this, b)
+  def requirement: Option[Predicate[A]] = Some(is(this))
+  def andThen[C](b: Transformation[B, C]): Transformation[A, C] = b match {
+    case AndThen(t1, t2) => AndThen(AndThen(this, t1), t2)
+    case _               => AndThen(this, b)
+  }
 }
 
 final case class AndThen[A, B, C](t1: Transformation[A, B], t2: Transformation[B, C]) extends Transformation[A, C] {

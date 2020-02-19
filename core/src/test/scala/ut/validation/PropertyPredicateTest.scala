@@ -117,8 +117,7 @@ class PropertyPredicateTest extends AnyFreeSpec {
       assert(p("a") === Invalid(is(intString) && p))
       assert(
         p("200000") == Invalid(
-          intString.satisfies(is(toRomanLtX)) &&
-            intString.andThen(toRomanLtX).satisfies(length.satisfies(lt(3)) && endsWith("i"))
+          intString.satisfies(is(toRomanLtX) && toRomanLtX.satisfies(length.satisfies(lt(3)) && endsWith("i")))
         )
       )
     }
