@@ -15,13 +15,14 @@ trait FoldablePredicates {
       indexable.zipWithIndex(input).foldLeft[Validity[S[E]]](Validity.Valid) {
         case (v, (e, idx)) =>
           val positionValidation = elementValidation(e) match {
-            case Valid      => Valid
-            case Invalid(p) => Invalid(atPosition[S, E](idx, p))
+            case Valid                                  => Valid
+            case Invalid(p: TransformedPredicate[E])    => Invalid(atPos[S, E](idx).andThen(p))
+            case Invalid(p: NonTransformedPredicate[E]) => Invalid(atPos[S, E](idx).satisfies(p))
           }
           v && positionValidation
       }
 
-    override def opposite: Predicate[S[E]] = exists(!elementValidation)
+    override def opposite: NonTransformedPredicate[S[E]] = exists(!elementValidation)
   }
 
   case class exists[I, T[_]: Indexable](elementValidation: Predicate[I]) extends CollectionPredicate[T[I]] {
@@ -37,11 +38,12 @@ trait FoldablePredicates {
     }
 
     private def validateElement(e: I, idx: Int): Validity[T[I]] = elementValidation(e) match {
-      case Valid      => Valid
-      case Invalid(p) => Invalid(atPosition[T, I](idx, p))
+      case Valid                                  => Valid
+      case Invalid(p: TransformedPredicate[I])    => Invalid(atPos[T, I](idx).andThen(p))
+      case Invalid(p: NonTransformedPredicate[I]) => Invalid(atPos[T, I](idx).satisfies(p))
     }
 
-    override def opposite: Predicate[T[I]] = forAll(!elementValidation)
+    override def opposite: NonTransformedPredicate[T[I]] = forAll(!elementValidation)
   }
 
 //  def atPosition[S[_] : Indexable,E](i:Int,p:Predicate[E]):Predicate[S[E]] = PositionPredicate(i,p)

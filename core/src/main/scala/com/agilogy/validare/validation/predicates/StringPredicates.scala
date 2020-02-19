@@ -3,7 +3,7 @@ package com.agilogy.validare.validation.predicates
 import scala.util.matching.Regex
 
 import com.agilogy.validare.utils.RegexUtils._
-import com.agilogy.validare.validation.{ AtomicPredicate, NotPredicate, Predicate }
+import com.agilogy.validare.validation.{ AtomicPredicate, NonTransformedPredicate, NotPredicate }
 
 trait StringPredicates {
 
@@ -51,7 +51,7 @@ trait StringPredicates {
   case object isTrimmed extends AtomicPredicate[String] {
     override def satisfiedBy(value: String): Boolean = value.trim == value
 
-    override def opposite: Predicate[String] = !this
+    override def opposite: NonTransformedPredicate[String] = NotPredicate(this)
   }
 
 }

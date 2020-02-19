@@ -1,20 +1,19 @@
 package com.agilogy.validare.validation
 
+import cats.Order
 import cats.data.NonEmptyList
+import cats.implicits._
 
-import com.agilogy.validare.validation.Predicate.False
 import com.agilogy.validare.validation.PredicatesBooleanAlgebra._
-import com.agilogy.validare.validation.Validity._
+import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 
 sealed trait Predicate[-I] extends Product with Serializable {
 
-  def &&[II <: I](other: Predicate[II]): Predicate[II] = and(this, other)
+  def &&[II <: I](other: Predicate[II]): AndPredicate[II] = and(this, other)
 
-  def ||[II <: I](other: Predicate[II]): Predicate[II] = or(this, other)
+  def ||[II <: I](other: Predicate[II]): OrPredicate[II] = or(this, other)
 
   def opposite: Predicate[I]
-
-  def unary_! : Predicate[I] = opposite
 
   def implies[II <: I](other: Predicate[II]): Predicate[II] = !this || other
 
@@ -24,36 +23,55 @@ sealed trait Predicate[-I] extends Product with Serializable {
 
 object Predicate {
 
-  case object True extends AtomicPredicate[Any] {
-    override def satisfiedBy(value: Any): Boolean = true
-
-    override def opposite: Predicate[Any] = False
+  implicit class PredicateSyntax[A](p: Predicate[A]) {
+    def unary_! : Predicate[A] = p.opposite
   }
 
-  case object False extends AtomicPredicate[Any] {
-    override def satisfiedBy(value: Any): Boolean = false
-
-    override def opposite: Predicate[Any] = True
+  implicit def predicateOrder[A]: Order[Predicate[A]] = new Order[Predicate[A]] {
+    override def compare(x: Predicate[A], y: Predicate[A]): Int = if (x == y) 0 else x.toString.compareTo(y.toString)
   }
+
+//  case object True extends AtomicPredicate[Any] {
+//    override def satisfiedBy(value: Any): Boolean = true
+//
+//    override def opposite: NonTransformedPredicate[Any] = False
+//  }
+//
+//  case object False extends AtomicPredicate[Any] {
+//    override def satisfiedBy(value: Any): Boolean = false
+//
+//    override def opposite: NonTransformedPredicate[Any] = True
+//  }
 
 }
 
-final case class OrPredicate[I](verifications: NonEmptyList[Predicate[I]]) extends Predicate[I] {
+trait NonTransformedPredicate[-A] extends Predicate[A] {
+
+  override def opposite: NonTransformedPredicate[A]
+}
+
+object NonTransformedPredicate {
+  implicit class NonTransformedPredicateSyntax[A](p: NonTransformedPredicate[A]) {
+    def unary_! : NonTransformedPredicate[A] = p.opposite
+  }
+}
+
+final case class OrPredicate[I](verifications: NonEmptyList[Predicate[I]]) extends NonTransformedPredicate[I] {
 
   require(verifications.size >= 2)
 
-  override def apply(input: I): Validity[I] =
-    verifications.map {
-      _.apply(input)
-    }.reduceLeft(_ || _)
+  override def apply(input: I): Validity[I] = verifications.map(_.apply(input)).reduceLeft(_ || _)
 
-  override def opposite: Predicate[I] =
-    verifications.tail.foldLeft[Predicate[I]](!verifications.head)((acc, v) => and(acc, !v))
+  override def opposite: AndPredicate[I] = AndPredicate(verifications.map(_.opposite))
 
   override def toString: String = verifications.map(_.toString).toList.mkString(" || ")
 }
 
-final case class AndPredicate[I](verifications: NonEmptyList[Predicate[I]]) extends Predicate[I] {
+object OrPredicate {
+  def apply[I](verifications: NonEmptyList[Predicate[I]]) = new OrPredicate[I](verifications.distinct)
+}
+
+final case class AndPredicate[I](verifications: NonEmptyList[Predicate[I]]) extends NonTransformedPredicate[I] {
 
   require(verifications.size >= 2)
 
@@ -61,78 +79,29 @@ final case class AndPredicate[I](verifications: NonEmptyList[Predicate[I]]) exte
     case (acc, v) => acc && v.apply(input)
   }
 
-  override def opposite: Predicate[I] =
-    verifications.tail.foldLeft[Predicate[I]](!verifications.head)((acc, v) => or(acc, !v))
+  override def opposite: OrPredicate[I] = OrPredicate(verifications.map(_.opposite))
 
   override def toString: String = verifications.map(_.toString).toList.mkString(" && ")
 }
 
-final case class NotPredicate[I](v: AtomicPredicate[I]) extends Predicate[I] {
+object AndPredicate {
+  def apply[I](verifications: NonEmptyList[Predicate[I]]) = new AndPredicate[I](verifications.distinct)
+}
+
+final case class NotPredicate[I](v: AtomicPredicate[I]) extends NonTransformedPredicate[I] {
   override def apply(input: I): Validity[I] = v.apply(input) match {
     case Validity.Valid      => Validity.Invalid(this)
     case Validity.Invalid(_) => Validity.Valid
   }
 
-  override def opposite: Predicate[I] = v
+  override def opposite: NonTransformedPredicate[I] = v
 
   override def toString: String = s"!$v"
 }
 
-//TODO: This transformation is a tautology (it is always true). Can this be represented in the type level somehow?
-final case class Property[I, FT](name: String, getter: I => FT) extends Transformation[I, FT] {
+trait CollectionPredicate[I] extends NonTransformedPredicate[I] {}
 
-  override val id: String = name
-
-  override val f: I => Option[FT] = i => Some(getter(i))
-
-  override def opposite: Predicate[I] = False
-
-  override def toString: String = name
-
-  override def equals(obj: scala.Any): Boolean = obj match {
-    //TODO: Check property obj is of the same type
-    case Property(`name`, _) => true
-    case _                   => false
-  }
-}
-
-trait Transformation[T, T2] extends AtomicPredicate[T] {
-  val f: T => Option[T2]
-  override def satisfiedBy(value: T): Boolean = f(value).isDefined
-
-  def apply(other: Predicate[T2]): TransformedPredicate[T, T2]    = this.validate(other)
-  def validate(other: Predicate[T2]): TransformedPredicate[T, T2] = TransformedPredicate(this, other)
-}
-
-/**
- * A predicate that validates a value after some transformation that may itself fail
- * e.g. isDefined transforms an Option[T] into a T and then continues validating T,
- * but the transformation itself may fail (i.e. when the value is None)
- * Note that PropertyPredicate is similar but the transformation is assumed to never fail
- * @tparam T The type of the value that will be validated
- * @tparam T2 The type of the result of the transformation, that will be further validated to validate the input value
- */
-final case class TransformedPredicate[T, T2](transformation: Transformation[T, T2], verification: Predicate[T2])
-    extends Predicate[T] {
-
-  override def apply(input: T): Validity[T] = transformation.f(input) match {
-    case Some(i2) =>
-      verification(i2) match {
-        case Valid      => Valid
-        case Invalid(p) => Invalid(TransformedPredicate(transformation, p))
-      }
-    case None =>
-      //Validity.Invalid(transformation)
-      transformation(input) && Invalid(this)
-  }
-
-  override def opposite: Predicate[T] = !transformation || TransformedPredicate(transformation, !verification)
-
-}
-
-trait CollectionPredicate[I] extends Predicate[I] {}
-
-trait AtomicPredicate[-I] extends Predicate[I] {
+trait AtomicPredicate[-I] extends NonTransformedPredicate[I] {
 
   val id: String = this.getClass.getSimpleName
 
@@ -144,5 +113,51 @@ trait AtomicPredicate[-I] extends Predicate[I] {
       Validity.Valid
     else
       Validity.Invalid(this)
+
+}
+
+final case class is[A, B](transformation: Transformation[A, B]) extends AtomicPredicate[A] {
+  override def opposite: NotPredicate[A]      = NotPredicate(this)
+  override def satisfiedBy(value: A): Boolean = transformation(value).isRight
+}
+
+/**
+ * A predicate that validates a value after some transformation that may itself fail
+ * e.g. isDefined transforms an Option[T] into a T and then continues validating T,
+ * but the transformation itself may fail (i.e. when the value is None)
+ * Note that PropertyPredicate is similar but the transformation is assumed to never fail
+ * @tparam A The type of the value that will be validated
+ */
+trait TransformedPredicate[A] extends Predicate[A] {
+  type Result
+  def transformation: Transformation[A, Result]
+  def verification: NonTransformedPredicate[Result]
+
+  def andThen(predicate: TransformedPredicate[Result]): Predicate[A] =
+    this && transformation.andThen(predicate.transformation).satisfies(predicate.verification)
+
+  override final def apply(input: A): Validity[A] = parse(input) match {
+    case Left(Invalid(p)) => Invalid(p)
+    case _                => Valid
+  }
+
+  override def toString: String = s"$transformation.satisfies($verification)"
+
+  override def opposite: Predicate[A] = {
+    val satisfaction = transformation.satisfies(verification.opposite)
+    transformation.requirement.fold[Predicate[A]](satisfaction)(r => !r || satisfaction)
+  }
+
+  def parse(input: A): Either[Invalid[A], Result] = transformation(input) match {
+    case Right(i2) =>
+      verification(i2) match {
+        case Valid                                       => i2.asRight[Invalid[A]]
+        case Invalid(p: TransformedPredicate[Result])    => Invalid(transformation.andThen(p)).asLeft[Result]
+        case Invalid(p: NonTransformedPredicate[Result]) => Invalid(transformation.satisfies(p)).asLeft[Result]
+      }
+    case Left(Invalid(failedPredicate)) =>
+      Invalid(failedPredicate && this).asLeft[Result]
+
+  }
 
 }
