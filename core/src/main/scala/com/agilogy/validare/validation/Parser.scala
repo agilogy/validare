@@ -6,10 +6,10 @@ import cats.implicits._
 trait Parser[A, B] {
   def parse(input: A): Either[Invalid[A], B]
   def asPredicate: Predicate[A]
-  def andThen[C](conversion: Conversion[B, C]): Parser[A, C]     = flatMap(Parser.of(conversion))
-  def flatMap[C](parser: Parser[B, C]): Parser[A, C]             = Parser.FlatMap(this, parser)
-  def &&(predicate: Predicate[B]): Parser.TailVerification[A, B] = Parser.TailVerification(this, predicate)
-  protected def mapPredicate(predicate: Predicate[B]): Predicate[A]
+  def andThen[C](conversion: Conversion[B, C]): Parser[A, C] = flatMap(Parser.of(conversion))
+  def flatMap[C](parser: Parser[B, C]): Parser[A, C]         = Parser.FlatMap(this, parser)
+  def &&(predicate: Predicate[B]): Parser[A, B]              = Parser.TailVerification(this, predicate)
+  private[validation] def mapPredicate(predicate: Predicate[B]): Predicate[A]
 }
 
 object Parser {
@@ -18,16 +18,17 @@ object Parser {
   def of[A, B](predicate: Predicate[A], conversion: Conversion[A, B]): Parser[A, B] =
     Simple(Some(predicate), conversion)
 
-  final case class Base[A, B](predicate: Predicate[A], property: Property[A, B]) extends Parser[A, B] {
+  private final case class Base[A, B](predicate: Predicate[A], property: Property[A, B]) extends Parser[A, B] {
     override def parse(input: A): Either[Invalid[A], B] = predicate(input) match {
       case Invalid(p) => Invalid(p).asLeft[B]
       case Valid      => property.getter(input).asRight[Invalid[A]]
     }
-    override protected def mapPredicate(predicate: Predicate[B]): Predicate[A] = property.satisfies(predicate)
+    override private[validation] def mapPredicate(predicate: Predicate[B]): Predicate[A] = property.satisfies(predicate)
 
     override def asPredicate: Predicate[A] = predicate
   }
-  final case class Simple[A, B](predicate: Option[Predicate[A]], conversion: Conversion[A, B]) extends Parser[A, B] {
+  private final case class Simple[A, B](predicate: Option[Predicate[A]], conversion: Conversion[A, B])
+      extends Parser[A, B] {
     override def parse(input: A): Either[Invalid[A], B] = {
       val predicateResult = predicate.map(_.apply(input)).getOrElse(Valid)
       (predicateResult, conversion.convert(input)) match {
@@ -36,10 +37,11 @@ object Parser {
         case (_, res)                         => res
       }
     }
-    override def asPredicate: Predicate[A]                                     = predicate.map(_ && conversion).getOrElse(conversion)
-    override protected def mapPredicate(predicate: Predicate[B]): Predicate[A] = conversion.satisfies(predicate)
+    override def asPredicate: Predicate[A] = predicate.map(_ && conversion).getOrElse(conversion)
+    override private[validation] def mapPredicate(predicate: Predicate[B]): Predicate[A] =
+      conversion.satisfies(predicate)
   }
-  final case class FlatMap[A, B, C](left: Parser[A, B], right: Parser[B, C]) extends Parser[A, C] {
+  private final case class FlatMap[A, B, C](left: Parser[A, B], right: Parser[B, C]) extends Parser[A, C] {
     override def parse(input: A): Either[Invalid[A], C] =
       left
         .parse(input)
@@ -47,10 +49,10 @@ object Parser {
         .flatMap(right.parse(_).leftMap(i => Invalid(left.mapPredicate(i.failing))))
 
     override def asPredicate: Predicate[A] = left.asPredicate && left.mapPredicate(right.asPredicate)
-    override protected def mapPredicate(predicate: Predicate[C]): Predicate[A] =
+    override private[validation] def mapPredicate(predicate: Predicate[C]): Predicate[A] =
       left.mapPredicate(right.mapPredicate(predicate))
   }
-  final case class TailVerification[A, B](parser: Parser[A, B], predicate: Predicate[B]) extends Parser[A, B] {
+  private final case class TailVerification[A, B](parser: Parser[A, B], predicate: Predicate[B]) extends Parser[A, B] {
     override def parse(input: A): Either[Invalid[A], B] =
       parser.parse(input).leftMap(i => Invalid(i.failing && parser.mapPredicate(predicate))).flatMap { res =>
         predicate(res) match {
@@ -58,7 +60,8 @@ object Parser {
           case Invalid(p) => Invalid(parser.mapPredicate(p)).asLeft[B]
         }
       }
-    override def asPredicate: Predicate[A]                                     = parser.asPredicate && parser.mapPredicate(predicate)
-    override protected def mapPredicate(predicate: Predicate[B]): Predicate[A] = parser.mapPredicate(predicate)
+    override def asPredicate: Predicate[A] = parser.asPredicate && parser.mapPredicate(predicate)
+    override private[validation] def mapPredicate(predicate: Predicate[B]): Predicate[A] =
+      parser.mapPredicate(predicate)
   }
 }
