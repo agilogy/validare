@@ -52,8 +52,8 @@ trait TransformedPredicates {
     def apply[T]: defined[T] = new defined[T]
   }
 
-  def ifDefined[T](p: NonTransformedPredicate[T]): Predicate[Option[T]] = !defined[T] || defined[T].satisfies(p)
-  def ifDefined[T](p: TransformedPredicate[T]): Predicate[Option[T]]    = !defined[T] || defined[T].andThen(p)
+  def ifDefined[T](p: NonMappedPredicate[T]): Predicate[Option[T]] = !defined[T] || defined[T].satisfies(p)
+  def ifDefined[T](p: MappedPredicate[T]): Predicate[Option[T]]    = !defined[T] || defined[T].andThen(p)
 
   case object intString extends Conversion[String, Int] with Product0 {
 

@@ -1,12 +1,10 @@
 package ut.validation
 
-import cats.implicits._
-
-import org.scalatest.freespec.AnyFreeSpec
-
+import com.agilogy.validare.validation.{ is, AtomicPredicate, Conversion, NotPredicate, Property }
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 import com.agilogy.validare.validation.predicates.Predicates._
-import com.agilogy.validare.validation.{ is, AtomicPredicate, Conversion, NotPredicate, Property, TransformedPredicate }
+import org.scalatest.freespec.AnyFreeSpec
+import cats.implicits._
 
 class PropertyPredicateTest extends AnyFreeSpec {
 
@@ -36,8 +34,8 @@ class PropertyPredicateTest extends AnyFreeSpec {
   }
 
   "field predicate" - {
-    val catName: Property[Cat, String]             = at[Cat]("name", _.name)
-    val catNameNotEmpty: TransformedPredicate[Cat] = catName(nonEmptyS)
+    val catName: Property[Cat, String] = at[Cat]("name", _.name)
+    val catNameNotEmpty                = catName(nonEmptyS)
 
     "should validate fields" in {
       assert(catNameNotEmpty(Cat("", 8)) === Invalid(catNameNotEmpty))
@@ -103,7 +101,7 @@ class PropertyPredicateTest extends AnyFreeSpec {
       assert(p("2") === Invalid(intString.satisfies(gt(2))))
     }
     "should merge all passed and satisfied transformations when complaining about a transformation predicate" in {
-      assert(p("3") === Invalid(intString.compose(toRomanLtX).compose(length).satisfies(lt(3))))
+      assert(p("3") === Invalid(intString.compose(toRomanLtX).satisfies(length.satisfies(lt(3)))))
       assert(p("4") === Invalid(intString.andThen(toRomanLtX.satisfies(endsWith("i")))))
     }
     "should complain about failed transformations (merging previous passed ones) and about non checked predicates after the transformation" in {
