@@ -52,11 +52,12 @@ class IndexablePredicatesTest extends AnyFreeSpec {
     "should check the value at a particular position" in {
       assert(p(Seq("abc", "")) === Valid)
       assert(p(Seq("abc", "a")) === Invalid(p))
-      assert(p(Seq("abc")) === Invalid(length[Seq[String]].satisfies(gteq(1)) && atPos(1).satisfies(isEmptyS)))
+//      assert(p(Seq("abc")) === Invalid(length[Seq[String]].satisfies(gteq(1)) && atPos(1).satisfies(isEmptyS)))
+      assert(p(Seq("abc")) === Invalid(AtPosition[Seq, String](1) && atPos(1).satisfies(isEmptyS)))
     }
     "should have an opposite" in {
-      //TODO: Try to make length(lt(1)) synonim of isEmpty
-      assert(p.opposite === (length[Seq[String]].satisfies(lt(1)) || atPos(1).satisfies(nonEmptyS)))
+//      assert(p.opposite === (length[Seq[String]].satisfies(lt(1)) || atPos(1).satisfies(nonEmptyS)))
+      assert(p.opposite === (!AtPosition[Seq, String](1) || atPos(1).satisfies(nonEmptyS)))
     }
   }
 

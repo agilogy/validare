@@ -15,10 +15,10 @@ trait TransformedPredicates {
 
   def at[T]: AtBuilder[T] = new AtBuilder[T]
 
-  case class AtPosition[S[_]: Indexable, E](index: Int) extends Transformation[S[E], E] {
+  case class AtPosition[S[_]: Indexable, E](index: Int) extends Conversion[S[E], E] {
     override def transform(value: S[E]): Option[E] = implicitly[Indexable[S]].at(value, index)
-    override def requirement: Some[TransformedPredicate[S[_]] { type Result = Int }] =
-      Some(length[S[_]].satisfies(gteq(index)))
+//    override def requirement: TransformedPredicate[S[_]] { type Result = Int } =
+//      length[S[_]].satisfies(gteq(index))
   }
 
   def atPos[S[_]: Indexable, E](index: Int): AtPosition[S, E] = AtPosition[S, E](index)
@@ -35,7 +35,7 @@ trait TransformedPredicates {
     override def canEqual(that: Any): Boolean = this.getClass == that.getClass
   }
 
-  class defined[T] extends Transformation[Option[T], T] with Product0 {
+  class defined[T] extends Conversion[Option[T], T] with Product0 {
 
     override def transform(value: Option[T]): Option[T] = value
 
@@ -52,10 +52,10 @@ trait TransformedPredicates {
     def apply[T]: defined[T] = new defined[T]
   }
 
-  def ifDefined[T](p: NonTransformedPredicate[T]): Predicate[Option[T]] = !is(defined[T]) || defined[T].satisfies(p)
-  def ifDefined[T](p: TransformedPredicate[T]): Predicate[Option[T]]    = !is(defined[T]) || defined[T].andThen(p)
+  def ifDefined[T](p: NonTransformedPredicate[T]): Predicate[Option[T]] = !defined[T] || defined[T].satisfies(p)
+  def ifDefined[T](p: TransformedPredicate[T]): Predicate[Option[T]]    = !defined[T] || defined[T].andThen(p)
 
-  case object intString extends Transformation[String, Int] with Product0 {
+  case object intString extends Conversion[String, Int] with Product0 {
 
     override def transform(value: String): Option[Int] = Try(value.toInt).toOption
   }
