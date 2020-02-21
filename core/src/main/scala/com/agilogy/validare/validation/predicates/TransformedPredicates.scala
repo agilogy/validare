@@ -17,8 +17,6 @@ trait TransformedPredicates {
 
   case class AtPosition[S[_]: Indexable, E](index: Int) extends Conversion[S[E], E] {
     override def transform(value: S[E]): Option[E] = implicitly[Indexable[S]].at(value, index)
-//    override def requirement: TransformedPredicate[S[_]] { type Result = Int } =
-//      length[S[_]].satisfies(gteq(index))
   }
 
   def atPos[S[_]: Indexable, E](index: Int): AtPosition[S, E] = AtPosition[S, E](index)
@@ -52,8 +50,7 @@ trait TransformedPredicates {
     def apply[T]: defined[T] = new defined[T]
   }
 
-  def ifDefined[T](p: NonMappedPredicate[T]): Predicate[Option[T]] = !defined[T] || defined[T].satisfies(p)
-  def ifDefined[T](p: MappedPredicate[T]): Predicate[Option[T]]    = !defined[T] || defined[T].andThen(p)
+  def ifDefined[T](p: Predicate[T]): Predicate[Option[T]] = !defined[T] || defined[T].satisfies(p)
 
   case object intString extends Conversion[String, Int] with Product0 {
 

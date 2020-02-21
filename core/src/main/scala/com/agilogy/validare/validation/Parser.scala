@@ -30,17 +30,14 @@ object Parser {
   final case class Simple[A, B](predicate: Option[Predicate[A]], conversion: Conversion[A, B]) extends Parser[A, B] {
     override def parse(input: A): Either[Invalid[A], B] = {
       val predicateResult = predicate.map(_.apply(input)).getOrElse(Valid)
-      (predicateResult, conversion.parse(input)) match {
+      (predicateResult, conversion.convert(input)) match {
         case (Invalid(p1), Left(Invalid(p2))) => Invalid(p1 && p2).asLeft[B]
         case (Invalid(p1), Right(_))          => Invalid(p1).asLeft[B]
         case (_, res)                         => res
       }
     }
-    override def asPredicate: Predicate[A] = predicate.map(_ && conversion).getOrElse(conversion)
-    override protected def mapPredicate(predicate: Predicate[B]): Predicate[A] = predicate match {
-      case n: NonMappedPredicate[B] => conversion.satisfies(n)
-      case m: MappedPredicate[B]    => conversion.andThen(m)
-    }
+    override def asPredicate: Predicate[A]                                     = predicate.map(_ && conversion).getOrElse(conversion)
+    override protected def mapPredicate(predicate: Predicate[B]): Predicate[A] = conversion.satisfies(predicate)
   }
   final case class FlatMap[A, B, C](left: Parser[A, B], right: Parser[B, C]) extends Parser[A, C] {
     override def parse(input: A): Either[Invalid[A], C] =

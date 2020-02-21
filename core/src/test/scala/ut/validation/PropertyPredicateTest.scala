@@ -1,6 +1,6 @@
 package ut.validation
 
-import com.agilogy.validare.validation.{ is, AtomicPredicate, Conversion, NotPredicate, Property }
+import com.agilogy.validare.validation.{ AtomicPredicate, Conversion, NotPredicate, Property }
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 import com.agilogy.validare.validation.predicates.Predicates._
 import org.scalatest.freespec.AnyFreeSpec
@@ -56,8 +56,8 @@ class PropertyPredicateTest extends AnyFreeSpec {
   "isDefined predicate" - {
 
     "should validate Option[T]" in {
-      assert(is(defined[String])(Some("foo")) === Valid)
-      assert(is(defined[String])(None) === Invalid(is(defined[String])))
+      assert(defined[String](Some("foo")) === Valid)
+      assert(defined[String](None) === Invalid(defined[String]))
     }
 
     val definedGt3 = defined[Int].satisfies(gt(3))
@@ -70,7 +70,7 @@ class PropertyPredicateTest extends AnyFreeSpec {
     }
 
     "should have an opposite" in {
-      assert(!is(defined[String]) === NotPredicate(is(defined[String])))
+      assert(!defined[String] == NotPredicate(defined[String]))
       val notDefinedGt3 = !definedGt3
       assert(notDefinedGt3 == (!defined[Int] || defined[Int].satisfies(!gt(3))))
       assert(notDefinedGt3(Some(5)) === Invalid(!defined[Int] || defined[Int](lteq(3))))
@@ -89,20 +89,17 @@ class PropertyPredicateTest extends AnyFreeSpec {
   "intString" in {
     val intStringGt5 = intString(gt(5) && isOdd)
     assert(intStringGt5("9") === Valid)
-    assert(intStringGt5.parse("9") == 9.asRight)
     assert(intStringGt5("a") === Invalid(intString && intStringGt5))
-    assert(intStringGt5.parse("2") == Invalid(intStringGt5).asLeft[Int])
-    assert(intStringGt5.parse("a") == Invalid(intString && intStringGt5).asLeft[Int])
   }
 
   "transformed predicates" - {
-    val p = intString.satisfies(gt(2)).andThen(toRomanLtX.satisfies(length.satisfies(lt(3)) && endsWith("i")))
+    val p = intString.satisfies(gt(2) && toRomanLtX.satisfies(length.satisfies(lt(3)) && endsWith("i")))
     "should validate first transformation predicates and keep validating the rest after the second transformation" in {
       assert(p("2") === Invalid(intString.satisfies(gt(2))))
     }
     "should merge all passed and satisfied transformations when complaining about a transformation predicate" in {
-      assert(p("3") === Invalid(intString.compose(toRomanLtX).satisfies(length.satisfies(lt(3)))))
-      assert(p("4") === Invalid(intString.andThen(toRomanLtX.satisfies(endsWith("i")))))
+      assert(p("3") === Invalid(intString.satisfies(toRomanLtX.satisfies(length.satisfies(lt(3))))))
+      assert(p("4") === Invalid(intString.satisfies(toRomanLtX.satisfies(endsWith("i")))))
     }
     "should complain about failed transformations (merging previous passed ones) and about non checked predicates after the transformation" in {
       assert(p("a") === Invalid(intString && p))

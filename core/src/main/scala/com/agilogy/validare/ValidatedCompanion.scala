@@ -2,7 +2,7 @@ package com.agilogy.validare
 
 import scala.reflect.ClassTag
 
-import com.agilogy.validare.validation.{ NonMappedPredicate, Parser, Predicate, Property }
+import com.agilogy.validare.validation.{ Parser, Predicate, Property }
 import cats.implicits._
 
 final case class ValidationError[A, B](typeName: String, failsPredicate: Predicate[B]) extends Exception {
@@ -22,9 +22,9 @@ trait ValidatedCompanionLike[A, B] {
 
 }
 
-abstract class ValidatedCompanion[A, B: ClassTag](validation: NonMappedPredicate[A])(build: A => B)
+abstract class ValidatedCompanion[A, B: ClassTag](validation: Predicate[A])(build: A => B)
     extends ValidatedCompanionLike[A, B] {
-  override def predicate: NonMappedPredicate[A] = validation
-  override def unsafe(value: A): B              = build(value)
-  override def typeName: String                 = implicitly[ClassTag[B]].toString()
+  override def predicate: Predicate[A] = validation
+  override def unsafe(value: A): B     = build(value)
+  override def typeName: String        = implicitly[ClassTag[B]].toString()
 }
