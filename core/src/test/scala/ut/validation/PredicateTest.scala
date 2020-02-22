@@ -1,11 +1,13 @@
 package ut.validation
 
 import cats.data.NonEmptyList
+
 import org.scalatest.funspec.AnyFunSpec
+
+import com.agilogy.validare.validation.Predicate.{ False, True }
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 import com.agilogy.validare.validation.predicates.Predicates._
 import com.agilogy.validare.validation.{ AndPredicate, NotPredicate, OrPredicate, Predicate }
-import com.agilogy.validare.validation.Predicate.{ False, True }
 
 class PredicateTest extends AnyFunSpec {
 
