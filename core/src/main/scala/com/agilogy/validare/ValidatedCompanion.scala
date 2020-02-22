@@ -4,8 +4,7 @@ import scala.reflect.ClassTag
 
 import cats.implicits._
 
-import com.agilogy.validare.validation.Predicate
-import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
+import com.agilogy.validare.validation.{ Parser, Predicate, Property }
 
 final case class ValidationError[A, B](typeName: String, failsPredicate: Predicate[B]) extends Exception {
   override def getMessage: String = s"Error validating $typeName. The value fails to satisfy $failsPredicate."
@@ -17,10 +16,10 @@ trait ValidatedCompanionLike[A, B] {
   def unsafe(value: A): B
   def typeName: String
 
-  def apply(value: A): Either[ValidationError[B, A], B] = predicate(value) match {
-    case Valid                    => unsafe(value).asRight
-    case Invalid(failedPredicate) => ValidationError[B, A](typeName, failedPredicate).asLeft
-  }
+  final def parser: Parser[A, B] = Parser.of(predicate, Property(typeName, unsafe))
+
+  def apply(value: A): Either[ValidationError[B, A], B] =
+    parser.parse(value).leftMap(i => ValidationError(typeName, i.failing))
 
 }
 

@@ -6,14 +6,7 @@ import org.scalatest.freespec.AnyFreeSpec
 
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 import com.agilogy.validare.validation.predicates.Predicates._
-import com.agilogy.validare.validation.{
-  is,
-  AtomicPredicate,
-  NotPredicate,
-  Property,
-  Transformation,
-  TransformedPredicate
-}
+import com.agilogy.validare.validation.{ AtomicPredicate, Conversion, NotPredicate, Property }
 
 class PropertyPredicateTest extends AnyFreeSpec {
 
@@ -27,7 +20,7 @@ class PropertyPredicateTest extends AnyFreeSpec {
 
     override def opposite: isEven.type = isEven
   }
-  case object toRomanLtX extends Transformation[Int, String] {
+  case object toRomanLtX extends Conversion[Int, String] {
     override def transform(value: Int): Option[String] = value match {
       case 1 => Some("i")
       case 2 => Some("ii")
@@ -43,8 +36,8 @@ class PropertyPredicateTest extends AnyFreeSpec {
   }
 
   "field predicate" - {
-    val catName: Property[Cat, String]             = at[Cat]("name", _.name)
-    val catNameNotEmpty: TransformedPredicate[Cat] = catName(nonEmptyS)
+    val catName: Property[Cat, String] = at[Cat]("name", _.name)
+    val catNameNotEmpty                = catName(nonEmptyS)
 
     "should validate fields" in {
       assert(catNameNotEmpty(Cat("", 8)) === Invalid(catNameNotEmpty))
@@ -65,24 +58,24 @@ class PropertyPredicateTest extends AnyFreeSpec {
   "isDefined predicate" - {
 
     "should validate Option[T]" in {
-      assert(is(defined[String])(Some("foo")) === Valid)
-      assert(is(defined[String])(None) === Invalid(is(defined[String])))
+      assert(defined[String](Some("foo")) === Valid)
+      assert(defined[String](None) === Invalid(defined[String]))
     }
 
     val definedGt3 = defined[Int].satisfies(gt(3))
 
     "should compose with further validation" in {
-      assert(definedGt3(None) === Invalid(is(defined[Int]) && definedGt3))
+      assert(definedGt3(None) === Invalid(defined[Int] && definedGt3))
       //TODO: Not sure. Maybe we should provide information on the transformation applied
       assert(definedGt3(Some(2)) === Invalid(definedGt3))
       assert(defined[Int](gt(0) && lt(10))(Some(12)) === Invalid(defined[Int](lt(10))))
     }
 
     "should have an opposite" in {
-      assert(!is(defined[String]) === NotPredicate(is(defined[String])))
+      assert(!defined[String] == NotPredicate(defined[String]))
       val notDefinedGt3 = !definedGt3
-      assert(notDefinedGt3 == (!is(defined[Int]) || defined[Int].satisfies(!gt(3))))
-      assert(notDefinedGt3(Some(5)) === Invalid(!is(defined[Int]) || defined[Int](lteq(3))))
+      assert(notDefinedGt3 == (!defined[Int] || defined[Int].satisfies(!gt(3))))
+      assert(notDefinedGt3(Some(5)) === Invalid(!defined[Int] || defined[Int](lteq(3))))
     }
   }
 
@@ -91,33 +84,30 @@ class PropertyPredicateTest extends AnyFreeSpec {
       val gt3 = ifDefined[Int](gt(3))
       assert(gt3(None) === Valid)
       assert(gt3(Some(4)) === Valid)
-      assert(gt3(Some(2)) === Invalid(!is(defined[Int]) || defined[Int](gt(3))))
+      assert(gt3(Some(2)) === Invalid(!defined[Int] || defined[Int](gt(3))))
     }
   }
 
   "intString" in {
     val intStringGt5 = intString(gt(5) && isOdd)
     assert(intStringGt5("9") === Valid)
-    assert(intStringGt5.parse("9") == 9.asRight)
-    assert(intStringGt5("a") === Invalid(is(intString) && intStringGt5))
-    assert(intStringGt5.parse("2") == Invalid(intStringGt5).asLeft[Int])
-    assert(intStringGt5.parse("a") == Invalid(is(intString) && intStringGt5).asLeft[Int])
+    assert(intStringGt5("a") === Invalid(intString && intStringGt5))
   }
 
   "transformed predicates" - {
-    val p = intString.satisfies(gt(2)).andThen(toRomanLtX.satisfies(length.satisfies(lt(3)) && endsWith("i")))
+    val p = intString.satisfies(gt(2) && toRomanLtX.satisfies(length.satisfies(lt(3)) && endsWith("i")))
     "should validate first transformation predicates and keep validating the rest after the second transformation" in {
       assert(p("2") === Invalid(intString.satisfies(gt(2))))
     }
     "should merge all passed and satisfied transformations when complaining about a transformation predicate" in {
-      assert(p("3") === Invalid(intString.andThen(toRomanLtX).andThen(length).satisfies(lt(3))))
-      assert(p("4") === Invalid(intString.andThen(toRomanLtX.satisfies(endsWith("i")))))
+      assert(p("3") === Invalid(intString.satisfies(toRomanLtX.satisfies(length.satisfies(lt(3))))))
+      assert(p("4") === Invalid(intString.satisfies(toRomanLtX.satisfies(endsWith("i")))))
     }
     "should complain about failed transformations (merging previous passed ones) and about non checked predicates after the transformation" in {
-      assert(p("a") === Invalid(is(intString) && p))
+      assert(p("a") === Invalid(intString && p))
       assert(
         p("200000") == Invalid(
-          intString.satisfies(is(toRomanLtX) && toRomanLtX.satisfies(length.satisfies(lt(3)) && endsWith("i")))
+          intString.satisfies(toRomanLtX && toRomanLtX.satisfies(length.satisfies(lt(3)) && endsWith("i")))
         )
       )
     }
