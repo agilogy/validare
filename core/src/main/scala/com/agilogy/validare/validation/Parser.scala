@@ -1,7 +1,8 @@
 package com.agilogy.validare.validation
 
-import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 import cats.implicits._
+
+import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 
 trait Parser[A, B] {
   def parse(input: A): Either[Invalid[A], B]

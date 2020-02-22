@@ -2,8 +2,9 @@ package com.agilogy.validare
 
 import scala.reflect.ClassTag
 
-import com.agilogy.validare.validation.{ Parser, Predicate, Property }
 import cats.implicits._
+
+import com.agilogy.validare.validation.{ Parser, Predicate, Property }
 
 final case class ValidationError[A, B](typeName: String, failsPredicate: Predicate[B]) extends Exception {
   override def getMessage: String = s"Error validating $typeName. The value fails to satisfy $failsPredicate."
