@@ -27,17 +27,4 @@ object Validity {
 
   final case class Invalid[A](failing: Predicate[A]) extends Validity[A]
 
-  //   trait Invalid[A] extends Validity[A] {
-  //    type PredicateType <: Predicate[A]
-  //    def failing: PredicateType
-  //  }
-  //
-  //  object Invalid {
-  //    def unapply[P <: Predicate[A], A](i: Invalid[A] { type PredicateType = P }): Option[P] = Some(i.failing)
-  //    def apply[P <: Predicate[A], A](failing: P): Invalid[A] { type PredicateType = P } = InvalidImpl[P, A](failing)
-  //  }
-  //
-  //  private final case class InvalidImpl[P <: Predicate[A], A](failing: P) extends Invalid[A] {
-  //    override type PredicateType = P
-  //  }
 }
