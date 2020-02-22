@@ -8,9 +8,9 @@ import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 
 sealed trait Predicate[-I] extends Product with Serializable {
 
-  def &&[II <: I](other: Predicate[II]): AndPredicate[II] = and(this, other)
+  def &&[II <: I](other: Predicate[II]): Predicate[II] = and(this, other)
 
-  def ||[II <: I](other: Predicate[II]): OrPredicate[II] = or(this, other)
+  def ||[II <: I](other: Predicate[II]): Predicate[II] = or(this, other)
 
   def opposite: Predicate[I]
 
@@ -30,17 +30,17 @@ object Predicate {
     override def compare(x: Predicate[A], y: Predicate[A]): Int = if (x == y) 0 else x.toString.compareTo(y.toString)
   }
 
-//  case object True extends AtomicPredicate[Any] {
-//    override def satisfiedBy(value: Any): Boolean = true
-//
-//    override def opposite: NonTransformedPredicate[Any] = False
-//  }
-//
-//  case object False extends AtomicPredicate[Any] {
-//    override def satisfiedBy(value: Any): Boolean = false
-//
-//    override def opposite: NonTransformedPredicate[Any] = True
-//  }
+  case object True extends AtomicPredicate[Any] {
+    override def satisfiedBy(value: Any): Boolean = true
+
+    override def opposite: False.type = False
+  }
+
+  case object False extends AtomicPredicate[Any] {
+    override def satisfiedBy(value: Any): Boolean = false
+
+    override def opposite: True.type = True
+  }
 
 }
 
@@ -95,8 +95,7 @@ trait AtomicPredicate[-I] extends Predicate[I] {
 
   def satisfiedBy(value: I): Boolean
 
-  //TODO: It was final. Make somehow difficult to override by accident (no idea how to do that, yet)
-  override def apply(input: I): Validity[I] =
+  final override def apply(input: I): Validity[I] =
     if (satisfiedBy(input))
       Validity.Valid
     else

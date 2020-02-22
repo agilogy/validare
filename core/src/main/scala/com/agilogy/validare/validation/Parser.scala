@@ -2,6 +2,7 @@ package com.agilogy.validare.validation
 
 import cats.implicits._
 
+import com.agilogy.validare.validation.Predicate.True
 import com.agilogy.validare.validation.Validity.{ Invalid, Valid }
 
 trait Parser[A, B] {
@@ -14,31 +15,40 @@ trait Parser[A, B] {
 }
 
 object Parser {
+  def of[A](predicate: Predicate[A]): Parser[A, A]                              = PredicateAsParser(predicate)
   def of[A, B](predicate: Predicate[A], property: Property[A, B]): Parser[A, B] = Base(predicate, property)
-  def of[A, B](conversion: Conversion[A, B]): Parser[A, B]                      = Simple(None, conversion)
+  def of[A, B](conversion: Conversion[A, B]): Parser[A, B]                      = Simple(True, conversion)
   def of[A, B](predicate: Predicate[A], conversion: Conversion[A, B]): Parser[A, B] =
-    Simple(Some(predicate), conversion)
+    Simple(predicate, conversion)
+
+  def Id[A]: Parser[A, A] = of[A](True)
+
+  private final case class PredicateAsParser[A](predicate: Predicate[A]) extends Parser[A, A] {
+    override def parse(input: A): Either[Invalid[A], A] = predicate(input) match {
+      case Invalid(p) => Invalid(p).asLeft
+      case _          => input.asRight
+    }
+    override def asPredicate: Predicate[A]                                               = predicate
+    override private[validation] def mapPredicate(predicate: Predicate[A]): Predicate[A] = predicate
+  }
 
   private final case class Base[A, B](predicate: Predicate[A], property: Property[A, B]) extends Parser[A, B] {
     override def parse(input: A): Either[Invalid[A], B] = predicate(input) match {
-      case Invalid(p) => Invalid(p).asLeft[B]
-      case Valid      => property.getter(input).asRight[Invalid[A]]
+      case Invalid(p) => Invalid(p).asLeft
+      case Valid      => property.getter(input).asRight
     }
     override private[validation] def mapPredicate(predicate: Predicate[B]): Predicate[A] = property.satisfies(predicate)
 
     override def asPredicate: Predicate[A] = predicate
   }
-  private final case class Simple[A, B](predicate: Option[Predicate[A]], conversion: Conversion[A, B])
-      extends Parser[A, B] {
-    override def parse(input: A): Either[Invalid[A], B] = {
-      val predicateResult = predicate.map(_.apply(input)).getOrElse(Valid)
-      (predicateResult, conversion.convert(input)) match {
-        case (Invalid(p1), Left(Invalid(p2))) => Invalid(p1 && p2).asLeft[B]
-        case (Invalid(p1), Right(_))          => Invalid(p1).asLeft[B]
+  private final case class Simple[A, B](predicate: Predicate[A], conversion: Conversion[A, B]) extends Parser[A, B] {
+    override def parse(input: A): Either[Invalid[A], B] =
+      (predicate(input), conversion.convert(input)) match {
+        case (Invalid(p1), Left(Invalid(p2))) => Invalid(p1 && p2).asLeft
+        case (Invalid(p1), Right(_))          => Invalid(p1).asLeft
         case (_, res)                         => res
       }
-    }
-    override def asPredicate: Predicate[A] = predicate.map(_ && conversion).getOrElse(conversion)
+    override def asPredicate: Predicate[A] = predicate && conversion
     override private[validation] def mapPredicate(predicate: Predicate[B]): Predicate[A] =
       conversion.satisfies(predicate)
   }
@@ -57,8 +67,8 @@ object Parser {
     override def parse(input: A): Either[Invalid[A], B] =
       parser.parse(input).leftMap(i => Invalid(i.failing && parser.mapPredicate(predicate))).flatMap { res =>
         predicate(res) match {
-          case Valid      => res.asRight[Invalid[A]]
-          case Invalid(p) => Invalid(parser.mapPredicate(p)).asLeft[B]
+          case Valid      => res.asRight
+          case Invalid(p) => Invalid(parser.mapPredicate(p)).asLeft
         }
       }
     override def asPredicate: Predicate[A] = parser.asPredicate && parser.mapPredicate(predicate)

@@ -66,7 +66,6 @@ class PropertyPredicateTest extends AnyFreeSpec {
 
     "should compose with further validation" in {
       assert(definedGt3(None) === Invalid(defined[Int] && definedGt3))
-      //TODO: Not sure. Maybe we should provide information on the transformation applied
       assert(definedGt3(Some(2)) === Invalid(definedGt3))
       assert(defined[Int](gt(0) && lt(10))(Some(12)) === Invalid(defined[Int](lt(10))))
     }

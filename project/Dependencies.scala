@@ -1,5 +1,4 @@
 import sbt._
-import sbt.Keys.{ libraryDependencies, testFrameworks }
 
 trait Ghik {
 
@@ -27,13 +26,6 @@ trait Typelevel {
   val simulacrum    = org %% "simulacrum"     % "1.0.0"
 }
 
-//trait Propensive {
-//
-//  private val org = "com.propensive"
-//
-//  val magnolia = org %% "magnolia" % "0.12.5"
-//  val mercator = org %% "mercator" % "0.3.0"
-//}
 trait Nequissimus {
 
   private val org = "com.nequissimus"
@@ -47,19 +39,6 @@ trait ScalaMacros {
 
   val paradise = org % "paradise" % "2.1.0" cross CrossVersion.full
 }
-
-//trait Scalameta {
-//  private val org = "org.scalameta"
-//
-//  val munit = org %% "munit" % "0.4.5"
-//
-//  val munitTestFramework = new TestFramework("munit.Framework")
-//
-//  val munitTestSettings = Seq(
-//    libraryDependencies ++= Seq(munit % Test),
-//    testFrameworks ++= Seq(munitTestFramework)
-//  )
-//}
 
 trait Scalatest {
 
