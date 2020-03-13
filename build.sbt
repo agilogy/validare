@@ -14,11 +14,12 @@ lazy val root = project
 val core = project.module
   .settings(
     name := "validare-core",
-    version := "0.9",
+    version := "0.10-rc2",
     libraryDependencies ++= Seq(
       catsCore,
       catsKernel,
-      scalaTest
+      scalaTest,
+      silencerLib
     )
   )
   .settings(Publish.publishSettings)
