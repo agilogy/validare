@@ -35,7 +35,7 @@ abstract class EnumCompanion[A: ClassTag](getValue: A => String) extends Validat
   override def typeName: String = implicitly[ClassTag[A]].toString()
   def all: List[A]
   final override def parser: Parser[String, A] = Parser.of(isEnum(typeName, all)(getValue), Property(typeName, unsafe))
-  @silent("Throw")
-  final override def unsafe(value: String): A = apply(value).fold(throw _, identity)
+  @silent("OptionPartial")
+  final override def unsafe(value: String): A = all.find(getValue(_) === value).get
 
 }
