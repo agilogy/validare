@@ -151,12 +151,12 @@ trait Conversion[A, B] extends AtomicPredicate[A] { self =>
   override def opposite: Predicate[A] = NotPredicate(this)
 }
 
-final case class Property[I, FT](name: String, getter: I => FT) {
+final case class Property[I, FT](name: String, getter: I => FT) extends Conversion[I, FT] {
 
   def transform(value: I): Some[FT] = Some(getter(value))
 
-  def apply(p: Predicate[FT]): PropertySatisfies[I, FT]     = satisfies(p)
-  def satisfies(p: Predicate[FT]): PropertySatisfies[I, FT] = PropertySatisfies(this, p)
+  override def apply(p: Predicate[FT]): PropertySatisfies[I, FT]     = satisfies(p)
+  override def satisfies(p: Predicate[FT]): PropertySatisfies[I, FT] = PropertySatisfies(this, p)
 
   override def toString: String = name
 
